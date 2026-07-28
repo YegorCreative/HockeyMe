@@ -1,7 +1,8 @@
 import Combine
 
-enum AppRoute {
+enum AppRoute: Equatable {
     case authentication
+    case athleteOnboarding
     case athleteHome
     case coachHome
     case loading
@@ -12,6 +13,7 @@ final class AppRouter: ObservableObject {
     @Published private(set) var route: AppRoute = .loading
 
     let authService: AuthService?
+    let athleteService: AthleteService?
     let startupErrorMessage: String?
 
     private var isStarted = false
@@ -19,9 +21,11 @@ final class AppRouter: ObservableObject {
 
     init(
         authService: AuthService?,
+        athleteService: AthleteService?,
         startupErrorMessage: String? = nil
     ) {
         self.authService = authService
+        self.athleteService = athleteService
         self.startupErrorMessage = startupErrorMessage
     }
 
@@ -37,9 +41,11 @@ final class AppRouter: ObservableObject {
             return
         }
 
-        route = await authService.restoreSession()
-            ? .athleteHome
-            : .authentication
+        if await authService.restoreSession() {
+            await routeAuthenticatedUser()
+        } else {
+            route = .authentication
+        }
 
         authenticationTask = Task { [weak self] in
             for await isAuthenticated in authService.authenticationChanges {
@@ -47,10 +53,39 @@ final class AppRouter: ObservableObject {
                     return
                 }
 
-                self?.route = isAuthenticated
-                    ? .athleteHome
-                    : .authentication
+                guard let self else {
+                    return
+                }
+
+                if isAuthenticated {
+                    if route == .authentication || route == .loading {
+                        await routeAuthenticatedUser()
+                    }
+                } else {
+                    route = .authentication
+                }
             }
+        }
+    }
+
+    func completeAthleteOnboarding() {
+        route = .athleteHome
+    }
+
+    private func routeAuthenticatedUser() async {
+        guard let athleteService else {
+            route = .authentication
+            return
+        }
+
+        route = .loading
+
+        do {
+            route = try await athleteService.hasProfile()
+                ? .athleteHome
+                : .athleteOnboarding
+        } catch {
+            route = .athleteOnboarding
         }
     }
 

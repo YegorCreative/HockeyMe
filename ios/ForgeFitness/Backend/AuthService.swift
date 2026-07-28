@@ -1,4 +1,28 @@
+import Foundation
 import Supabase
+
+enum AuthenticationServiceError: LocalizedError {
+    case invalidCredentials
+    case emailAlreadyExists
+    case emailConfirmationRequired
+    case networkUnavailable
+    case unknown
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidCredentials:
+            "The email or password is incorrect."
+        case .emailAlreadyExists:
+            "An account already exists for this email."
+        case .emailConfirmationRequired:
+            "Confirm your email before signing in."
+        case .networkUnavailable:
+            "A network connection isn't available. Check your connection and try again."
+        case .unknown:
+            "Something went wrong. Please try again."
+        }
+    }
+}
 
 enum AccountCreationResult {
     case authenticated
@@ -13,17 +37,32 @@ final class AuthService {
     }
 
     func signIn(email: String, password: String) async throws {
-        try await client.auth.signIn(email: email, password: password)
+        do {
+            try await client.auth.signIn(
+                email: email,
+                password: password
+            )
+        } catch {
+            log(error, operation: "signIn")
+            throw mappedError(from: error)
+        }
     }
 
     func createAccount(
         email: String,
         password: String
     ) async throws -> AccountCreationResult {
-        let response = try await client.auth.signUp(
-            email: email,
-            password: password
-        )
+        let response: AuthResponse
+
+        do {
+            response = try await client.auth.signUp(
+                email: email,
+                password: password
+            )
+        } catch {
+            log(error, operation: "signUp")
+            throw mappedError(from: error)
+        }
 
         return response.session == nil
             ? .emailConfirmationRequired
@@ -31,7 +70,12 @@ final class AuthService {
     }
 
     func signOut() async throws {
-        try await client.auth.signOut()
+        do {
+            try await client.auth.signOut()
+        } catch {
+            log(error, operation: "signOut")
+            throw mappedError(from: error)
+        }
     }
 
     func restoreSession() async -> Bool {
@@ -57,5 +101,63 @@ final class AuthService {
                 task.cancel()
             }
         }
+    }
+
+    private func mappedError(from error: Error) -> AuthenticationServiceError {
+        if isNetworkError(error) {
+            return .networkUnavailable
+        }
+
+        guard let authError = error as? AuthError else {
+            return .unknown
+        }
+
+        switch authError.errorCode {
+        case .invalidCredentials:
+            return .invalidCredentials
+        case .emailExists, .userAlreadyExists:
+            return .emailAlreadyExists
+        case .emailNotConfirmed:
+            return .emailConfirmationRequired
+        case .requestTimeout:
+            return .networkUnavailable
+        default:
+            return .unknown
+        }
+    }
+
+    private func isNetworkError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+
+        if nsError.domain == NSURLErrorDomain {
+            return true
+        }
+
+        if let underlyingError = nsError.userInfo[
+            NSUnderlyingErrorKey
+        ] as? Error {
+            return isNetworkError(underlyingError)
+        }
+
+        return false
+    }
+
+    private func log(_ error: Error, operation: String) {
+#if DEBUG
+        if let authError = error as? AuthError {
+            print(
+                "[Supabase Auth] \(operation) failed: "
+                    + "code=\(authError.errorCode.rawValue), "
+                    + "message=\(authError.message)"
+            )
+        } else {
+            let nsError = error as NSError
+            print(
+                "[Supabase Auth] \(operation) failed: "
+                    + "type=\(type(of: error)), "
+                    + "domain=\(nsError.domain), code=\(nsError.code)"
+            )
+        }
+#endif
     }
 }

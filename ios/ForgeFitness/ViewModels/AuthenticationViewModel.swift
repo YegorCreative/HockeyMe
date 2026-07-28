@@ -35,8 +35,10 @@ final class AuthenticationViewModel: ObservableObject {
                 email: email.trimmingCharacters(in: .whitespacesAndNewlines),
                 password: password
             )
+        } catch let error as AuthenticationServiceError {
+            errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "We couldn't sign you in. Check your email and password, then try again."
+            errorMessage = AuthenticationServiceError.unknown.localizedDescription
         }
 
         isLoading = false
@@ -63,8 +65,10 @@ final class AuthenticationViewModel: ObservableObject {
             if case .emailConfirmationRequired = result {
                 statusMessage = "Check your email to confirm your account, then sign in."
             }
+        } catch let error as AuthenticationServiceError {
+            errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "We couldn't create your account. Check your details and try again."
+            errorMessage = AuthenticationServiceError.unknown.localizedDescription
         }
 
         isLoading = false

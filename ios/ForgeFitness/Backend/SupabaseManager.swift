@@ -6,6 +6,7 @@ enum SupabaseConfigurationError: LocalizedError {
     case invalidFile
     case invalidURL
     case missingAnonKey
+    case placeholderValues
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +18,8 @@ enum SupabaseConfigurationError: LocalizedError {
             "The Supabase URL is missing or invalid."
         case .missingAnonKey:
             "The Supabase anonymous key is missing."
+        case .placeholderValues:
+            "SupabaseConfig.plist still contains placeholder values."
         }
     }
 }
@@ -41,24 +44,59 @@ final class SupabaseManager {
             throw SupabaseConfigurationError.invalidFile
         }
 
-        guard let url = URL(string: configuration.url),
+        let urlValue = configuration.url.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        let anonKey = configuration.anonKey.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+
+        guard !Self.isPlaceholder(urlValue),
+              !Self.isPlaceholder(anonKey) else {
+            throw SupabaseConfigurationError.placeholderValues
+        }
+
+        guard let url = URL(string: urlValue),
               url.scheme == "https",
-              url.host != nil else {
+              url.host != nil,
+              url.user == nil,
+              url.password == nil else {
             throw SupabaseConfigurationError.invalidURL
         }
 
-        guard !configuration.anonKey.isEmpty else {
+        guard !anonKey.isEmpty else {
             throw SupabaseConfigurationError.missingAnonKey
         }
 
         client = SupabaseClient(
             supabaseURL: url,
-            supabaseKey: configuration.anonKey
+            supabaseKey: anonKey
         )
+    }
+
+    private static func isPlaceholder(_ value: String) -> Bool {
+        let normalized = value.lowercased()
+        return normalized.isEmpty
+            || normalized.contains("your_project")
+            || normalized.contains("your_supabase")
+            || normalized.contains("placeholder")
     }
 }
 
 private struct SupabaseConfiguration: Decodable {
     let url: String
     let anonKey: String
+}
+
+enum SupabaseDebugLogger {
+    static func logConfigurationError(_ error: Error) {
+#if DEBUG
+        let nsError = error as NSError
+        print(
+            "[Supabase Configuration] \(type(of: error)): "
+                + "domain=\(nsError.domain), code=\(nsError.code), "
+                + "message=\(error.localizedDescription)"
+        )
+#endif
+    }
 }
