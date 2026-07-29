@@ -7,7 +7,8 @@ struct Workout: Identifiable, Hashable {
     let estimatedDurationMinutes: Int
     let scheduledDate: Date
     let status: WorkoutStatus
-    let exercises: [Exercise]
+    let exercises: [WorkoutExercise]
+    let assignmentID: UUID?
 
     init(
         id: UUID = UUID(),
@@ -16,7 +17,8 @@ struct Workout: Identifiable, Hashable {
         estimatedDurationMinutes: Int,
         scheduledDate: Date,
         status: WorkoutStatus,
-        exercises: [Exercise]
+        exercises: [WorkoutExercise],
+        assignmentID: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -25,6 +27,7 @@ struct Workout: Identifiable, Hashable {
         self.scheduledDate = scheduledDate
         self.status = status
         self.exercises = exercises
+        self.assignmentID = assignmentID
     }
 }
 

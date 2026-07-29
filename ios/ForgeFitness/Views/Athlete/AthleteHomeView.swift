@@ -1,7 +1,25 @@
 import SwiftUI
 
 struct AthleteHomeView: View {
-    @StateObject private var viewModel = AthleteHomeViewModel()
+    @StateObject private var viewModel: AthleteHomeViewModel
+    private let athleteService: AthleteService
+    private let trainingRepository: TrainingRepository
+    private let exerciseService: ExerciseService?
+
+    init(
+        athleteService: AthleteService,
+        trainingRepository: TrainingRepository,
+        exerciseService: ExerciseService?
+    ) {
+        self.athleteService = athleteService
+        self.trainingRepository = trainingRepository
+        self.exerciseService = exerciseService
+        _viewModel = StateObject(
+            wrappedValue: AthleteHomeViewModel(
+                athleteService: athleteService
+            )
+        )
+    }
 
     var body: some View {
         TabView {
@@ -10,7 +28,10 @@ struct AthleteHomeView: View {
                     Label("Home", systemImage: "house.fill")
                 }
 
-            WorkoutListView()
+            WorkoutListView(
+                repository: trainingRepository,
+                exerciseService: exerciseService
+            )
                 .tabItem {
                     Label("Workouts", systemImage: "dumbbell.fill")
                 }
@@ -25,12 +46,15 @@ struct AthleteHomeView: View {
                     Label("Messages", systemImage: "bubble.left.and.bubble.right.fill")
                 }
 
-            PlaceholderTabView(title: "Profile")
+            AthleteProfileView(athleteService: athleteService)
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle.fill")
                 }
         }
         .tint(AppColors.primary)
+        .task {
+            await viewModel.loadIfNeeded()
+        }
     }
 
     private var dashboard: some View {
@@ -50,6 +74,32 @@ struct AthleteHomeView: View {
             .background(AppColors.background)
             .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.inline)
+            .refreshable {
+                await viewModel.refresh()
+            }
+            .overlay {
+                if viewModel.isLoading && viewModel.athlete == nil {
+                    LoadingView()
+                        .background(AppColors.background)
+                } else if let error = viewModel.errorMessage,
+                          viewModel.athlete == nil {
+                    ContentUnavailableView {
+                        Label(
+                            "Profile Unavailable",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                    } description: {
+                        Text(error)
+                    } actions: {
+                        Button("Try Again") {
+                            Task {
+                                await viewModel.retry()
+                            }
+                        }
+                    }
+                    .background(AppColors.background)
+                }
+            }
         }
     }
 

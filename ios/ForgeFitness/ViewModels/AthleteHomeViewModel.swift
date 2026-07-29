@@ -1,8 +1,26 @@
 import Combine
+import Foundation
 
 @MainActor
 final class AthleteHomeViewModel: ObservableObject {
-    let greeting = "Good Morning, Yegor"
+    @Published private(set) var athlete: Athlete?
+    @Published private(set) var isLoading = false
+    @Published private(set) var errorMessage: String?
+
+    private let athleteService: AthleteService
+    private var hasLoaded = false
+
+    init(athleteService: AthleteService) {
+        self.athleteService = athleteService
+    }
+
+    var greeting: String {
+        guard let athlete else {
+            return "Welcome Back"
+        }
+
+        return "Good \(dayPart), \(athlete.firstName)"
+    }
 
     let todaysWorkout = WorkoutSummary(
         title: "Lower Body Power",
@@ -46,6 +64,50 @@ final class AthleteHomeViewModel: ObservableObject {
         )
     ]
 
+    func loadIfNeeded() async {
+        guard !hasLoaded else {
+            return
+        }
+
+        await load()
+    }
+
+    func refresh() async {
+        await load()
+    }
+
+    func retry() async {
+        await load()
+    }
+
+    private func load() async {
+        guard !isLoading else {
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            athlete = try await athleteService.loadCurrentProfile()
+            hasLoaded = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+
+    private var dayPart: String {
+        switch Calendar.current.component(.hour, from: Date()) {
+        case 5..<12:
+            "Morning"
+        case 12..<17:
+            "Afternoon"
+        default:
+            "Evening"
+        }
+    }
 }
 
 struct WorkoutSummary {

@@ -11,10 +11,16 @@ struct ForgeFitnessApp: App {
             let manager = try SupabaseManager()
             let authService = AuthService(client: manager.client)
             let athleteService = AthleteService(client: manager.client)
+            let trainingRepository = TrainingRepository(client: manager.client)
+            let programRepository = ProgramRepository(client: manager.client)
+            let exerciseService = ExerciseService(client: manager.client)
             _router = StateObject(
                 wrappedValue: AppRouter(
                     authService: authService,
-                    athleteService: athleteService
+                    athleteService: athleteService,
+                    trainingRepository: trainingRepository,
+                    programRepository: programRepository,
+                    exerciseService: exerciseService
                 )
             )
         } catch {
@@ -23,6 +29,9 @@ struct ForgeFitnessApp: App {
                 wrappedValue: AppRouter(
                     authService: nil,
                     athleteService: nil,
+                    trainingRepository: nil,
+                    programRepository: nil,
+                    exerciseService: nil,
                     startupErrorMessage: "Forge Fitness has an invalid Supabase configuration. Please contact support."
                 )
             )
@@ -53,9 +62,22 @@ struct ForgeFitnessApp: App {
                         )
                     }
                 case .athleteHome:
-                    AthleteHomeView()
+                    if let athleteService = router.athleteService,
+                       let trainingRepository = router.trainingRepository {
+                        AthleteHomeView(
+                            athleteService: athleteService,
+                            trainingRepository: trainingRepository,
+                            exerciseService: router.exerciseService
+                        )
+                    }
                 case .coachHome:
-                    CoachHomeView()
+                    if let athleteService = router.athleteService,
+                       let programRepository = router.programRepository {
+                        CoachHomeView(
+                            athleteService: athleteService,
+                            programRepository: programRepository
+                        )
+                    }
                 case .loading:
                     LoadingView()
                 }

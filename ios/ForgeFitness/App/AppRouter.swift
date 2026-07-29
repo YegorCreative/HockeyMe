@@ -14,6 +14,9 @@ final class AppRouter: ObservableObject {
 
     let authService: AuthService?
     let athleteService: AthleteService?
+    let trainingRepository: TrainingRepository?
+    let programRepository: ProgramRepository?
+    let exerciseService: ExerciseService?
     let startupErrorMessage: String?
 
     private var isStarted = false
@@ -22,10 +25,16 @@ final class AppRouter: ObservableObject {
     init(
         authService: AuthService?,
         athleteService: AthleteService?,
+        trainingRepository: TrainingRepository?,
+        programRepository: ProgramRepository?,
+        exerciseService: ExerciseService?,
         startupErrorMessage: String? = nil
     ) {
         self.authService = authService
         self.athleteService = athleteService
+        self.trainingRepository = trainingRepository
+        self.programRepository = programRepository
+        self.exerciseService = exerciseService
         self.startupErrorMessage = startupErrorMessage
     }
 
@@ -73,6 +82,11 @@ final class AppRouter: ObservableObject {
     }
 
     private func routeAuthenticatedUser() async {
+        if await programRepository?.isCurrentUserCoach() == true {
+            route = .coachHome
+            return
+        }
+
         guard let athleteService else {
             route = .authentication
             return

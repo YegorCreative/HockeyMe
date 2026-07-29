@@ -1,33 +1,101 @@
 import SwiftUI
 
 struct WorkoutListView: View {
-    @StateObject private var viewModel = WorkoutViewModel()
+    @StateObject private var viewModel: WorkoutViewModel
+    private let repository: TrainingRepository
+    private let exerciseService: ExerciseService?
+
+    init(
+        repository: TrainingRepository,
+        exerciseService: ExerciseService?
+    ) {
+        self.repository = repository
+        self.exerciseService = exerciseService
+        _viewModel = StateObject(
+            wrappedValue: WorkoutViewModel(repository: repository)
+        )
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: AppSpacing.lg) {
-                    workoutSection(
-                        title: "Today's Workout",
-                        workouts: [viewModel.todaysWorkout],
-                        emphasis: true
-                    )
-
-                    workoutSection(
-                        title: "Upcoming Workouts",
-                        workouts: viewModel.upcomingWorkouts
-                    )
-
-                    workoutSection(
-                        title: "Completed Workouts",
-                        workouts: viewModel.completedWorkouts
-                    )
+                if !viewModel.workouts.isEmpty {
+                    LazyVStack(alignment: .leading, spacing: AppSpacing.lg) {
+                        workoutSection(
+                            title: "Today's Workout",
+                            workouts: viewModel.todaysWorkouts,
+                            emphasis: true
+                        )
+                        workoutSection(
+                            title: "Upcoming Workouts",
+                            workouts: viewModel.upcomingWorkouts
+                        )
+                        workoutSection(
+                            title: "Completed Workouts",
+                            workouts: viewModel.completedWorkouts
+                        )
+                    }
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.bottom, AppSpacing.xl)
                 }
-                .padding(.horizontal, AppSpacing.lg)
-                .padding(.bottom, AppSpacing.xl)
             }
             .background(AppColors.background)
             .navigationTitle("Workouts")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if let exerciseService {
+                        NavigationLink {
+                            ExerciseLibraryView(service: exerciseService)
+                        } label: {
+                            Label(
+                                "Exercise Library",
+                                systemImage: "hockey.puck.fill"
+                            )
+                        }
+                    }
+                }
+            }
+            .refreshable {
+                await viewModel.refresh()
+            }
+            .overlay {
+                stateOverlay
+            }
+        }
+        .task {
+            await viewModel.loadIfNeeded()
+        }
+    }
+
+    @ViewBuilder
+    private var stateOverlay: some View {
+        if viewModel.isLoading && viewModel.workouts.isEmpty {
+            LoadingView()
+                .background(AppColors.background)
+        } else if let error = viewModel.errorMessage,
+                  viewModel.workouts.isEmpty {
+            ContentUnavailableView {
+                Label(
+                    "Workouts Unavailable",
+                    systemImage: "exclamationmark.triangle"
+                )
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Try Again") {
+                    Task { await viewModel.retry() }
+                }
+            }
+            .background(AppColors.background)
+        } else if viewModel.workouts.isEmpty {
+            ContentUnavailableView(
+                "No Active Program",
+                systemImage: "dumbbell",
+                description: Text(
+                    "Your coach has not assigned an active training program."
+                )
+            )
+            .background(AppColors.background)
         }
     }
 
@@ -42,14 +110,26 @@ struct WorkoutListView: View {
                 .foregroundStyle(AppColors.textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
-            ForEach(workouts) { workout in
-                NavigationLink {
-                    WorkoutDetailView(workout: workout)
-                } label: {
-                    WorkoutRow(workout: workout, isEmphasized: emphasis)
+            if workouts.isEmpty {
+                Text("No workouts")
+                    .font(AppTypography.body)
+                    .foregroundStyle(AppColors.textSecondary)
+            } else {
+                ForEach(workouts) { workout in
+                    NavigationLink {
+                        WorkoutDetailView(
+                            workout: workout,
+                            repository: repository
+                        )
+                    } label: {
+                        WorkoutRow(
+                            workout: workout,
+                            isEmphasized: emphasis
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens workout details")
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens workout details")
             }
         }
     }
@@ -85,7 +165,6 @@ private struct WorkoutRow: View {
                         "\(workout.estimatedDurationMinutes) min",
                         systemImage: "clock"
                     )
-
                     Text(
                         workout.scheduledDate.formatted(
                             date: .abbreviated,
@@ -98,7 +177,6 @@ private struct WorkoutRow: View {
             }
 
             Spacer()
-
             Image(systemName: "chevron.right")
                 .font(AppTypography.caption)
                 .foregroundStyle(AppColors.textSecondary)

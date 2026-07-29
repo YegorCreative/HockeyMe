@@ -1,122 +1,164 @@
 import SwiftUI
 
 struct WorkoutDetailView: View {
-    let workout: Workout
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: WorkoutSessionViewModel
+
+    init(workout: Workout, repository: TrainingRepository) {
+        _viewModel = StateObject(
+            wrappedValue: WorkoutSessionViewModel(
+                workout: workout,
+                repository: repository
+            )
+        )
+    }
 
     var body: some View {
+        Group {
+            switch viewModel.phase {
+            case .ready:
+                workoutOverview
+            case .active:
+                WorkoutSessionView(viewModel: viewModel)
+            case .summary:
+                if let summary = viewModel.summary {
+                    WorkoutSummaryView(
+                        workoutTitle: viewModel.workout.title,
+                        summary: summary,
+                        onDone: dismiss.callAsFunction
+                    )
+                }
+            }
+        }
+        .background(AppColors.background)
+        .navigationTitle(navigationTitle)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(viewModel.phase == .active)
+        .task {
+            await viewModel.restoreIfNeeded()
+        }
+        .overlay {
+            if viewModel.isLoading {
+                LoadingView()
+                    .background(AppColors.background)
+            }
+        }
+    }
+
+    private var navigationTitle: String {
+        switch viewModel.phase {
+        case .ready:
+            viewModel.workout.title
+        case .active:
+            "Workout"
+        case .summary:
+            "Summary"
+        }
+    }
+
+    private var workoutOverview: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: AppSpacing.lg) {
-                summary
+                VStack(alignment: .leading, spacing: AppSpacing.md) {
+                    Text(viewModel.workout.title)
+                        .font(AppTypography.title)
+                        .fontWeight(.bold)
+                        .foregroundStyle(AppColors.textPrimary)
+
+                    Text(viewModel.workout.description)
+                        .font(AppTypography.body)
+                        .foregroundStyle(AppColors.textSecondary)
+
+                    Label(
+                        "\(viewModel.workout.estimatedDurationMinutes) min",
+                        systemImage: "clock"
+                    )
+                    .font(AppTypography.headline)
+                    .foregroundStyle(AppColors.primary)
+                }
+                .accessibilityElement(children: .combine)
 
                 Text("Exercises")
                     .font(AppTypography.headline)
                     .foregroundStyle(AppColors.textPrimary)
                     .accessibilityAddTraits(.isHeader)
 
-                ForEach(
-                    Array(workout.exercises.enumerated()),
-                    id: \.element.id
-                ) { index, exercise in
-                    ExerciseCard(
-                        exercise: exercise,
-                        number: index + 1
+                if viewModel.workout.exercises.isEmpty {
+                    Text("No exercises have been added to this workout.")
+                        .font(AppTypography.body)
+                        .foregroundStyle(AppColors.textSecondary)
+                } else {
+                    ForEach(
+                        Array(viewModel.workout.exercises.enumerated()),
+                        id: \.element.id
+                    ) { index, exercise in
+                    HStack(spacing: AppSpacing.md) {
+                        Text("\(index + 1)")
+                            .font(AppTypography.caption)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                            .frame(
+                                width: AppSpacing.xl,
+                                height: AppSpacing.xl
+                            )
+                            .background(AppColors.primary)
+                            .clipShape(Circle())
+                            .accessibilityHidden(true)
+
+                        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                            Text(exercise.name)
+                                .font(AppTypography.headline)
+                                .foregroundStyle(AppColors.textPrimary)
+
+                            Text(
+                                "\(exercise.sets) sets • \(exercise.reps) reps"
+                            )
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AppColors.textSecondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(AppSpacing.md)
+                    .background(AppColors.surface)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: AppRadius.medium)
                     )
+                    .accessibilityElement(children: .combine)
+                    }
+                }
+
+                Button("Start Workout") {
+                    Task {
+                        await viewModel.startWorkout()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primary)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity)
+                .disabled(
+                    viewModel.isSaving
+                        || viewModel.workout.exercises.isEmpty
+                )
+                .accessibilityHint(
+                    "Begins the exercise-by-exercise workout session"
+                )
+
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.error)
+                        .accessibilityLabel("Error: \(error)")
+
+                    Button("Try Again") {
+                        Task {
+                            await viewModel.retryRestore()
+                        }
+                    }
                 }
             }
             .padding(.horizontal, AppSpacing.lg)
             .padding(.bottom, AppSpacing.xl)
         }
-        .background(AppColors.background)
-        .navigationTitle(workout.title)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var summary: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            Text(workout.title)
-                .font(AppTypography.title)
-                .fontWeight(.bold)
-                .foregroundStyle(AppColors.textPrimary)
-
-            Text(workout.description)
-                .font(AppTypography.body)
-                .foregroundStyle(AppColors.textSecondary)
-
-            Label(
-                "Estimated duration: \(workout.estimatedDurationMinutes) minutes",
-                systemImage: "clock"
-            )
-            .font(AppTypography.headline)
-            .foregroundStyle(AppColors.primary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private struct ExerciseCard: View {
-    let exercise: Exercise
-    let number: Int
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.md) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(number)")
-                    .font(AppTypography.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .frame(
-                        width: AppSpacing.xl,
-                        height: AppSpacing.xl
-                    )
-                    .background(AppColors.primary)
-                    .clipShape(Circle())
-                    .accessibilityHidden(true)
-
-                Text(exercise.name)
-                    .font(AppTypography.headline)
-                    .foregroundStyle(AppColors.textPrimary)
-            }
-
-            HStack(spacing: AppSpacing.lg) {
-                metric(title: "Sets", value: String(exercise.sets))
-                metric(title: "Reps", value: exercise.reps)
-                metric(
-                    title: "Rest",
-                    value: "\(exercise.restSeconds) sec"
-                )
-            }
-
-            VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                Label("Coach Notes", systemImage: "quote.bubble")
-                    .font(AppTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppColors.secondary)
-
-                Text(exercise.coachNotes)
-                    .font(AppTypography.body)
-                    .foregroundStyle(AppColors.textSecondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.md)
-        .background(AppColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(exercise.name). \(exercise.sets) sets. \(exercise.reps) reps. \(exercise.restSeconds) seconds rest. Coach notes: \(exercise.coachNotes)"
-        )
-    }
-
-    private func metric(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xs) {
-            Text(title)
-                .font(AppTypography.caption)
-                .foregroundStyle(AppColors.textSecondary)
-
-            Text(value)
-                .font(AppTypography.headline)
-                .foregroundStyle(AppColors.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
