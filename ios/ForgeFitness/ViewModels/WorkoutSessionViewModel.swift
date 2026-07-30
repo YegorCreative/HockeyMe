@@ -24,6 +24,7 @@ final class WorkoutSessionViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var summary: WorkoutSessionSummary?
     @Published private(set) var previousWorkoutValue: PreviousWorkoutValue?
+    @Published private(set) var syncStatusMessage: String?
 
     let workout: Workout
 
@@ -161,6 +162,9 @@ final class WorkoutSessionViewModel: ObservableObject {
                 prescription: currentExercise
             )
             completedSets.append(savedSet)
+            syncStatusMessage = await repository.hasPendingLogs()
+                ? "Saved offline — sync pending"
+                : "Synced"
             notes = ""
             if !isCurrentExerciseComplete {
                 startRestTimer(seconds: currentExercise.restSeconds)
@@ -186,6 +190,9 @@ final class WorkoutSessionViewModel: ObservableObject {
                 startedAt: startDate,
                 sets: completedSets
             )
+            syncStatusMessage = await repository.hasPendingLogs()
+                ? "Workout saved offline — sync pending"
+                : "Workout synced"
             phase = .summary
         } catch {
             errorMessage = friendlyMessage(for: error)

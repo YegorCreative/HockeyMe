@@ -17,6 +17,7 @@ final class AppRouter: ObservableObject {
     let trainingRepository: TrainingRepository?
     let programRepository: ProgramRepository?
     let exerciseService: ExerciseService?
+    let testingRepository: TestingRepository?
     let startupErrorMessage: String?
 
     private var isStarted = false
@@ -28,6 +29,7 @@ final class AppRouter: ObservableObject {
         trainingRepository: TrainingRepository?,
         programRepository: ProgramRepository?,
         exerciseService: ExerciseService?,
+        testingRepository: TestingRepository? = nil,
         startupErrorMessage: String? = nil
     ) {
         self.authService = authService
@@ -35,6 +37,7 @@ final class AppRouter: ObservableObject {
         self.trainingRepository = trainingRepository
         self.programRepository = programRepository
         self.exerciseService = exerciseService
+        self.testingRepository = testingRepository
         self.startupErrorMessage = startupErrorMessage
     }
 

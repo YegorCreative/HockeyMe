@@ -1,6 +1,6 @@
 import Foundation
 
-struct Workout: Identifiable, Hashable {
+struct Workout: Identifiable, Hashable, Codable {
     let id: UUID
     let title: String
     let description: String
@@ -31,7 +31,7 @@ struct Workout: Identifiable, Hashable {
     }
 }
 
-enum WorkoutStatus: Hashable {
+enum WorkoutStatus: Hashable, Codable {
     case scheduled
     case completed
 }

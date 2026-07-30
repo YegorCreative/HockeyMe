@@ -5,15 +5,18 @@ struct AthleteHomeView: View {
     private let athleteService: AthleteService
     private let trainingRepository: TrainingRepository
     private let exerciseService: ExerciseService?
+    private let testingRepository: TestingRepository?
 
     init(
         athleteService: AthleteService,
         trainingRepository: TrainingRepository,
-        exerciseService: ExerciseService?
+        exerciseService: ExerciseService?,
+        testingRepository: TestingRepository?
     ) {
         self.athleteService = athleteService
         self.trainingRepository = trainingRepository
         self.exerciseService = exerciseService
+        self.testingRepository = testingRepository
         _viewModel = StateObject(
             wrappedValue: AthleteHomeViewModel(
                 athleteService: athleteService
@@ -36,7 +39,17 @@ struct AthleteHomeView: View {
                     Label("Workouts", systemImage: "dumbbell.fill")
                 }
 
-            PlaceholderTabView(title: "Progress")
+            Group {
+                if let testingRepository {
+                    TestingDashboardView(
+                        role: .athlete,
+                        repository: testingRepository,
+                        athleteService: athleteService
+                    )
+                } else {
+                    PlaceholderTabView(title: "Progress")
+                }
+            }
                 .tabItem {
                     Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
                 }

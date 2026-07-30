@@ -3,23 +3,36 @@ import Supabase
 
 final class ExerciseService {
     private let client: SupabaseClient
+    private let offlineStore: OfflineStore
 
-    init(client: SupabaseClient) {
+    init(
+        client: SupabaseClient,
+        offlineStore: OfflineStore = .shared
+    ) {
         self.client = client
+        self.offlineStore = offlineStore
     }
 
     func fetchExercises() async throws -> [Exercise] {
-        let records: [LiveExerciseRecord] = try await client
-            .from("exercises")
-            .select(
-                "id,name,category,hockey_category,primary_muscles,secondary_muscles,equipment,difficulty,video_url,instruction_steps,common_mistakes,coach_tips_list,substitutions"
-            )
-            .eq("is_active", value: true)
-            .order("name")
-            .execute()
-            .value
-
-        return records.compactMap(\.exercise)
+        do {
+            let records: [LiveExerciseRecord] = try await client
+                .from("exercises")
+                .select(
+                    "id,name,category,hockey_category,primary_muscles,secondary_muscles,equipment,difficulty,video_url,instruction_steps,common_mistakes,coach_tips_list,substitutions"
+                )
+                .eq("is_active", value: true)
+                .order("name")
+                .execute()
+                .value
+            let exercises = records.compactMap(\.exercise)
+            try? await offlineStore.saveExercises(exercises)
+            return exercises
+        } catch {
+            if let cached = await offlineStore.exercises() {
+                return cached
+            }
+            throw error
+        }
     }
 }
 

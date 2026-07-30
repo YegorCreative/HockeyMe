@@ -66,9 +66,13 @@ not create duplicates.
    Confirm one `public.athletes` row exists with the matching Auth UUID.
 3. Create a separate dedicated **coach** Auth user in the development project.
 4. Copy its Auth UUID and run the administrator provisioning command above.
-5. Sign in as the coach. `AppRouter` checks the secured `public.coaches` row and
+5. Link the coach to athletes they are authorized to train using the
+   service-role-only `public.link_coach_athlete(coach_uuid, athlete_profile_uuid)`
+   RPC. This explicit link is required before the coach can discover or assign
+   an athlete.
+6. Sign in as the coach. `AppRouter` checks the secured `public.coaches` row and
    routes the account to the Coach portal.
-6. Open Programs → create or edit a program → Add Exercise. The picker loads
+7. Open Programs → create or edit a program → Add Exercise. The picker loads
    canonical records from `public.exercises`.
 
 Do not add an athlete row for a coach account. Do not provision athlete accounts
@@ -141,6 +145,19 @@ Temporary athlete deletion cascades assignments, sessions, and sets. The script
 then removes the temporary program and coach users. If a run is interrupted,
 search Authentication users for the `phase3-` prefix and remove those records
 from the development project only.
+
+## Phase 5 performance testing
+
+Migration `20260730170000_performance_testing.sql` creates the versioned testing
+protocol, metric, athlete-session, and historical-result model. It inserts no
+athlete, coach, session, or result bootstrap data. Standard hockey metric
+templates live in the iOS domain layer and are copied into a coach-owned
+protocol only when selected.
+
+Before release, use a dedicated development project to verify that a linked
+coach can create and activate a protocol, schedule a linked athlete, and record
+results; the athlete can read schedule/history and self-record only when
+permitted; an unrelated coach and anonymous client receive no rows.
 
 ## Verification commands
 

@@ -6,6 +6,12 @@ struct WorkoutSessionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                if let status = viewModel.syncStatusMessage {
+                    Label(status, systemImage: "arrow.triangle.2.circlepath")
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.textSecondary)
+                        .accessibilityLabel("Sync status: \(status)")
+                }
                 exerciseProgress
                 exerciseHeader
                 previousWorkout

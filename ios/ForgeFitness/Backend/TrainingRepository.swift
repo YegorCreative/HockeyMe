@@ -1,7 +1,7 @@
 import Foundation
 import Supabase
 
-struct TrainingPlan {
+struct TrainingPlan: Codable {
     let workouts: [Workout]
 }
 
@@ -31,89 +31,49 @@ enum TrainingRepositoryError: LocalizedError {
     }
 }
 
-final class TrainingRepository {
+final class TrainingRepository: @unchecked Sendable {
     private let client: SupabaseClient
+    private let offlineStore: OfflineStore
+    private let connectivityMonitor: ConnectivityMonitor
 
-    init(client: SupabaseClient) {
+    init(
+        client: SupabaseClient,
+        offlineStore: OfflineStore = .shared,
+        connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor()
+    ) {
         self.client = client
+        self.offlineStore = offlineStore
+        self.connectivityMonitor = connectivityMonitor
+        connectivityMonitor.start { [weak self] in
+            Task {
+                try? await self?.synchronizePendingLogs()
+            }
+        }
     }
 
     func loadActiveTrainingPlan() async throws -> TrainingPlan {
-        let athleteID = try await currentAthleteID()
-        let assignments: [AssignmentRecord] = try await client
-            .from("athlete_program_assignments")
-            .select("*,workout_programs!inner(status)")
-            .eq("athlete_id", value: athleteID)
-            .eq("status", value: "active")
-            .eq("workout_programs.status", value: "active")
-            .order("starts_on", ascending: false)
-            .limit(1)
-            .execute()
-            .value
-
-        guard let assignment = assignments.first else {
-            throw TrainingRepositoryError.activeAssignmentMissing
-        }
-
-        let weeks: [WeekRecord] = try await client
-            .from("workout_program_weeks")
-            .select()
-            .eq("program_id", value: assignment.programID)
-            .order("week_number")
-            .execute()
-            .value
-
-        let completed: [SessionStatusRecord] = try await client
-            .from("workout_sessions")
-            .select("workout_id,status")
-            .eq("athlete_id", value: athleteID)
-            .eq("status", value: "completed")
-            .execute()
-            .value
-        let completedWorkoutIDs = Set(completed.compactMap(\.workoutID))
-
-        var workouts: [Workout] = []
-        for week in weeks {
-            let weekWorkouts: [WorkoutRecord] = try await client
-                .from("workouts")
-                .select()
-                .eq("program_week_id", value: week.id)
-                .order("day_number")
-                .order("sort_order")
+        let userID = try await client.auth.session.user.id
+        do {
+            try await synchronizePendingLogs()
+            let response = try await client
+                .rpc("get_active_training_plan")
                 .execute()
-                .value
-
-            for workout in weekWorkouts {
-                let prescriptions = try await loadPrescriptions(
-                    workoutID: workout.id
-                )
-                let dayOffset = ((week.weekNumber - 1) * 7)
-                    + (workout.dayNumber - 1)
-                let scheduledDate = Calendar.current.date(
-                    byAdding: .day,
-                    value: dayOffset,
-                    to: assignment.startsOnDate
-                ) ?? assignment.startsOnDate
-
-                workouts.append(
-                    Workout(
-                        id: workout.id,
-                        title: workout.name,
-                        description: workout.description ?? "",
-                        estimatedDurationMinutes:
-                            workout.estimatedDurationMinutes ?? 0,
-                        scheduledDate: scheduledDate,
-                        status: completedWorkoutIDs.contains(workout.id)
-                            ? .completed
-                            : .scheduled,
-                        exercises: prescriptions,
-                        assignmentID: assignment.id
-                    )
-                )
+            let payload = try JSONDecoder().decode(
+                ActivePlanPayload?.self,
+                from: response.data
+            )
+            guard let payload else {
+                throw TrainingRepositoryError.activeAssignmentMissing
             }
+            let plan = payload.trainingPlan
+            try? await offlineStore.saveTrainingPlan(plan, userID: userID)
+            return plan
+        } catch {
+            if let cached = await offlineStore.trainingPlan(userID: userID) {
+                return cached
+            }
+            throw error
         }
-
-        return TrainingPlan(workouts: workouts)
     }
 
     func restoreSession(
@@ -188,6 +148,7 @@ final class TrainingRepository {
         prescription: WorkoutExercise
     ) async throws -> WorkoutSetLog {
         let insert = SetInsert(
+            id: set.id,
             sessionID: sessionID,
             workoutExerciseID: prescription.id,
             exerciseID: prescription.exerciseID,
@@ -199,17 +160,27 @@ final class TrainingRepository {
             notes: set.notes,
             completedAt: Self.timestamp(set.completedAt)
         )
-        let record: SetRecord = try await client
-            .from("workout_sets")
-            .insert(insert)
-            .select()
-            .single()
-            .execute()
-            .value
-
-        return try record.log(
-            exerciseName: prescription.name
-        )
+        do {
+            let record: SetRecord = try await client
+                .from("workout_sets")
+                .upsert(insert, onConflict: "id")
+                .select()
+                .single()
+                .execute()
+                .value
+            return try record.log(exerciseName: prescription.name)
+        } catch where Self.isNetworkError(error) {
+            let userID = try await client.auth.session.user.id
+            try await offlineStore.enqueueSet(
+                PendingWorkoutSet(
+                    sessionID: sessionID,
+                    prescriptionID: prescription.id,
+                    log: set
+                ),
+                userID: userID
+            )
+            return set
+        }
     }
 
     func finishSession(
@@ -235,11 +206,23 @@ final class TrainingRepository {
             totalVolume: totalVolume
         )
 
-        try await client
-            .from("workout_sessions")
-            .update(update)
-            .eq("id", value: id)
-            .execute()
+        do {
+            try await client
+                .from("workout_sessions")
+                .update(update)
+                .eq("id", value: id)
+                .execute()
+        } catch where Self.isNetworkError(error) {
+            let userID = try await client.auth.session.user.id
+            try await offlineStore.enqueueFinish(
+                PendingWorkoutFinish(
+                    sessionID: id,
+                    startedAt: startedAt,
+                    sets: sets
+                ),
+                userID: userID
+            )
+        }
 
         return WorkoutSessionSummary(
             totalVolume: totalVolume,
@@ -355,6 +338,95 @@ final class TrainingRepository {
         ISO8601DateFormatter().string(from: date)
     }
 
+    func synchronizePendingLogs() async throws {
+        let userID = try await client.auth.session.user.id
+        var remainingSets: [PendingWorkoutSet] = []
+        for pending in await offlineStore.pendingSets(userID: userID) {
+            let insert = SetInsert(
+                id: pending.log.id,
+                sessionID: pending.sessionID,
+                workoutExerciseID: pending.prescriptionID,
+                exerciseID: pending.log.exerciseID,
+                setNumber: pending.log.setNumber,
+                weight: pending.log.weight,
+                reps: pending.log.reps,
+                rpe: pending.log.rpe,
+                painLevel: pending.log.painLevel,
+                notes: pending.log.notes,
+                completedAt: Self.timestamp(pending.log.completedAt)
+            )
+            do {
+                try await client.from("workout_sets")
+                    .upsert(insert, onConflict: "id")
+                    .execute()
+            } catch {
+                remainingSets.append(pending)
+                if !Self.isNetworkError(error) { throw error }
+            }
+        }
+        try await offlineStore.replacePendingSets(
+            remainingSets,
+            userID: userID
+        )
+        guard remainingSets.isEmpty else { return }
+
+        var remainingFinishes: [PendingWorkoutFinish] = []
+        for pending in await offlineStore.pendingFinishes(userID: userID) {
+            let completedAt = pending.sets.map(\.completedAt).max() ?? Date()
+            let update = Self.finishUpdate(
+                startedAt: pending.startedAt,
+                completedAt: completedAt,
+                sets: pending.sets
+            )
+            do {
+                try await client.from("workout_sessions")
+                    .update(update)
+                    .eq("id", value: pending.sessionID)
+                    .execute()
+            } catch {
+                remainingFinishes.append(pending)
+                if !Self.isNetworkError(error) { throw error }
+            }
+        }
+        try await offlineStore.replacePendingFinishes(
+            remainingFinishes,
+            userID: userID
+        )
+    }
+
+    func hasPendingLogs() async -> Bool {
+        guard let userID = try? await client.auth.session.user.id else {
+            return false
+        }
+        let sets = await offlineStore.pendingSets(userID: userID)
+        let finishes = await offlineStore.pendingFinishes(userID: userID)
+        return !sets.isEmpty || !finishes.isEmpty
+    }
+
+    private static func finishUpdate(
+        startedAt: Date,
+        completedAt: Date,
+        sets: [WorkoutSetLog]
+    ) -> SessionFinishUpdate {
+        SessionFinishUpdate(
+            status: "completed",
+            completedAt: timestamp(completedAt),
+            durationSeconds: max(
+                0,
+                Int(completedAt.timeIntervalSince(startedAt))
+            ),
+            totalSets: sets.count,
+            totalReps: sets.reduce(0) { $0 + $1.reps },
+            totalVolume: sets.reduce(0) {
+                $0 + ($1.weight * Double($1.reps))
+            }
+        )
+    }
+
+    private static func isNetworkError(_ error: Error) -> Bool {
+        (error as NSError).domain == NSURLErrorDomain
+    }
+
     fileprivate static func parseTimestamp(_ value: String) throws -> Date {
         guard let date = ISO8601DateFormatter().date(from: value) else {
             throw TrainingRepositoryError.invalidTrainingData
@@ -364,6 +436,121 @@ final class TrainingRepository {
 }
 
 private struct AthleteReference: Decodable { let id: UUID }
+
+private struct ActivePlanPayload: Decodable {
+    let assignmentID: UUID
+    let startsOn: String
+    let weeks: [ActivePlanWeek]
+
+    var trainingPlan: TrainingPlan {
+        let startDate = Self.dateFormatter.date(from: startsOn) ?? Date()
+        let workouts = weeks.flatMap { week in
+            week.workouts.map { workout in
+                let offset = ((week.weekNumber - 1) * 7)
+                    + (workout.dayNumber - 1)
+                return Workout(
+                    id: workout.id,
+                    title: workout.name,
+                    description: workout.description ?? "",
+                    estimatedDurationMinutes:
+                        workout.estimatedDurationMinutes ?? 0,
+                    scheduledDate: Calendar.current.date(
+                        byAdding: .day,
+                        value: offset,
+                        to: startDate
+                    ) ?? startDate,
+                    status: workout.completed ? .completed : .scheduled,
+                    exercises: workout.exercises.map(\.workoutExercise),
+                    assignmentID: assignmentID
+                )
+            }
+        }
+        return TrainingPlan(workouts: workouts)
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    enum CodingKeys: String, CodingKey {
+        case assignmentID = "assignment_id"
+        case startsOn = "starts_on"
+        case weeks
+    }
+}
+
+private struct ActivePlanWeek: Decodable {
+    let weekNumber: Int
+    let workouts: [ActivePlanWorkout]
+    enum CodingKeys: String, CodingKey {
+        case weekNumber = "week_number"
+        case workouts
+    }
+}
+
+private struct ActivePlanWorkout: Decodable {
+    let id: UUID
+    let name: String
+    let description: String?
+    let dayNumber: Int
+    let estimatedDurationMinutes: Int?
+    let completed: Bool
+    let exercises: [ActivePlanExercise]
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, completed, exercises
+        case dayNumber = "day_number"
+        case estimatedDurationMinutes = "estimated_duration_minutes"
+    }
+}
+
+private struct ActivePlanExercise: Decodable {
+    let id: UUID
+    let exerciseID: UUID
+    let name: String
+    let description: String?
+    let category: String?
+    let difficulty: String?
+    let sets: Int
+    let repsMin: Int?
+    let repsMax: Int?
+    let restSeconds: Int
+    let coachNotes: String?
+
+    var workoutExercise: WorkoutExercise {
+        let reps: String
+        if let repsMin, let repsMax, repsMin != repsMax {
+            reps = "\(repsMin)–\(repsMax)"
+        } else {
+            reps = String(repsMin ?? repsMax ?? 1)
+        }
+        return WorkoutExercise(
+            id: id,
+            name: name,
+            sets: sets,
+            reps: reps,
+            restSeconds: restSeconds,
+            coachNotes: coachNotes ?? "",
+            exerciseID: exerciseID,
+            exerciseDescription: description,
+            category: category,
+            difficulty: difficulty
+        )
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, category, difficulty, sets
+        case exerciseID = "exercise_id"
+        case repsMin = "reps_min"
+        case repsMax = "reps_max"
+        case restSeconds = "rest_seconds"
+        case coachNotes = "coach_notes"
+    }
+}
 
 private struct AssignmentRecord: Decodable {
     let id: UUID
@@ -465,6 +652,7 @@ private struct SessionInsert: Encodable {
 }
 
 private struct SetInsert: Encodable {
+    let id: UUID
     let sessionID: UUID
     let workoutExerciseID: UUID
     let exerciseID: UUID
@@ -476,6 +664,7 @@ private struct SetInsert: Encodable {
     let notes: String
     let completedAt: String
     enum CodingKeys: String, CodingKey {
+        case id
         case sessionID = "session_id"
         case workoutExerciseID = "workout_exercise_id"
         case exerciseID = "exercise_id"

@@ -1,4 +1,4 @@
-enum ExerciseCategory: String, CaseIterable, Identifiable, Hashable {
+enum ExerciseCategory: String, CaseIterable, Identifiable, Hashable, Codable {
     case strength = "Strength"
     case power = "Power"
     case plyometrics = "Plyometrics"
@@ -8,7 +8,7 @@ enum ExerciseCategory: String, CaseIterable, Identifiable, Hashable {
     var id: Self { self }
 }
 
-enum HockeyExerciseCategory: String, CaseIterable, Identifiable, Hashable {
+enum HockeyExerciseCategory: String, CaseIterable, Identifiable, Hashable, Codable {
     case skatingStrength = "Skating Strength"
     case firstStepQuickness = "First-Step Quickness"
     case lateralPower = "Lateral Power"
@@ -21,7 +21,7 @@ enum HockeyExerciseCategory: String, CaseIterable, Identifiable, Hashable {
     var id: Self { self }
 }
 
-enum ExerciseDifficulty: String, CaseIterable, Identifiable, Hashable {
+enum ExerciseDifficulty: String, CaseIterable, Identifiable, Hashable, Codable {
     case beginner = "Beginner"
     case intermediate = "Intermediate"
     case advanced = "Advanced"

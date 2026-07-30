@@ -1,6 +1,6 @@
 import Foundation
 
-struct WorkoutSetLog: Identifiable {
+struct WorkoutSetLog: Identifiable, Codable {
     let id: UUID
     let exerciseID: UUID
     let exerciseName: String
@@ -37,13 +37,13 @@ struct WorkoutSetLog: Identifiable {
     }
 }
 
-struct PreviousWorkoutValue {
+struct PreviousWorkoutValue: Codable {
     let weight: Double
     let reps: Int
     let rpe: Int
 }
 
-struct WorkoutSessionSummary {
+struct WorkoutSessionSummary: Codable {
     let totalVolume: Double
     let totalSets: Int
     let totalReps: Int

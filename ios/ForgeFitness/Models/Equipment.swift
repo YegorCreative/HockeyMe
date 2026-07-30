@@ -1,4 +1,4 @@
-enum Equipment: String, CaseIterable, Identifiable, Hashable {
+enum Equipment: String, CaseIterable, Identifiable, Hashable, Codable {
     case barbell = "Barbell"
     case trapBar = "Trap Bar"
     case bench = "Bench"

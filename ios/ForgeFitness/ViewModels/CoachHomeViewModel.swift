@@ -60,7 +60,7 @@ final class CoachHomeViewModel: ObservableObject {
         from athlete: Athlete
     ) -> CoachAthlete {
         CoachAthlete(
-            id: athlete.userID,
+            id: athlete.id,
             name: "\(athlete.firstName) \(athlete.lastName)",
             team: athlete.team,
             position: athlete.position.rawValue,

@@ -3,12 +3,17 @@ import SwiftUI
 struct CoachHomeView: View {
     @StateObject private var viewModel: CoachHomeViewModel
     private let programRepository: ProgramRepository
+    private let testingRepository: TestingRepository?
+    private let athleteService: AthleteService
 
     init(
         athleteService: AthleteService,
-        programRepository: ProgramRepository
+        programRepository: ProgramRepository,
+        testingRepository: TestingRepository?
     ) {
+        self.athleteService = athleteService
         self.programRepository = programRepository
+        self.testingRepository = testingRepository
         _viewModel = StateObject(
             wrappedValue: CoachHomeViewModel(
                 athleteService: athleteService
@@ -31,6 +36,19 @@ struct CoachHomeView: View {
             ProgramListView(repository: programRepository)
                 .tabItem {
                     Label("Programs", systemImage: "list.clipboard.fill")
+                }
+
+            Group {
+                if let testingRepository {
+                    TestingDashboardView(
+                        role: .coach,
+                        repository: testingRepository,
+                        athleteService: athleteService
+                    )
+                }
+            }
+                .tabItem {
+                    Label("Testing", systemImage: "stopwatch.fill")
                 }
         }
         .tint(AppColors.primary)

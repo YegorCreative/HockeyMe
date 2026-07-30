@@ -3,9 +3,14 @@ import Supabase
 
 final class AthleteService {
     private let client: SupabaseClient
+    private let offlineStore: OfflineStore
 
-    init(client: SupabaseClient) {
+    init(
+        client: SupabaseClient,
+        offlineStore: OfflineStore = .shared
+    ) {
         self.client = client
+        self.offlineStore = offlineStore
     }
 
     func hasProfile() async throws -> Bool {
@@ -45,20 +50,31 @@ final class AthleteService {
     }
 
     func loadCurrentProfile() async throws -> Athlete {
-        let userID = try await currentUserID()
-        let profiles: [AthleteRecord] = try await client
-            .from("athletes")
-            .select()
-            .eq("user_id", value: userID)
-            .limit(1)
-            .execute()
-            .value
+        do {
+            let userID = try await currentUserID()
+            let profiles: [AthleteRecord] = try await client
+                .from("athletes")
+                .select()
+                .eq("user_id", value: userID)
+                .limit(1)
+                .execute()
+                .value
 
-        guard let profile = profiles.first else {
-            throw AthleteServiceError.profileNotFound
+            guard let profile = profiles.first else {
+                throw AthleteServiceError.profileNotFound
+            }
+            let athlete = try profile.athlete
+            try? await offlineStore.saveAthlete(athlete, userID: userID)
+            return athlete
+        } catch {
+            guard let userID = try? await currentUserID() else {
+                throw error
+            }
+            if let cached = await offlineStore.athlete(userID: userID) {
+                return cached
+            }
+            throw error
         }
-
-        return try profile.athlete
     }
 
     func updateProfile(_ athlete: Athlete) async throws {
@@ -165,6 +181,7 @@ private struct AthletePayload: Encodable {
 }
 
 private struct AthleteRecord: Decodable {
+    let id: UUID
     let userID: UUID
     let firstName: String?
     let lastName: String?
@@ -198,6 +215,7 @@ private struct AthleteRecord: Decodable {
             }
 
             return Athlete(
+                id: id,
                 userID: userID,
                 firstName: firstName,
                 lastName: lastName,
@@ -214,6 +232,7 @@ private struct AthleteRecord: Decodable {
     }
 
     enum CodingKeys: String, CodingKey {
+        case id
         case userID = "user_id"
         case firstName = "first_name"
         case lastName = "last_name"

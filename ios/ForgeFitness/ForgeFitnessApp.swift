@@ -7,6 +7,20 @@ struct ForgeFitnessApp: App {
     @StateObject private var router: AppRouter
 
     init() {
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+            _router = StateObject(
+                wrappedValue: AppRouter(
+                    authService: nil,
+                    athleteService: nil,
+                    trainingRepository: nil,
+                    programRepository: nil,
+                    exerciseService: nil,
+                    testingRepository: nil
+                )
+            )
+            return
+        }
+
         do {
             let manager = try SupabaseManager()
             let authService = AuthService(client: manager.client)
@@ -14,13 +28,15 @@ struct ForgeFitnessApp: App {
             let trainingRepository = TrainingRepository(client: manager.client)
             let programRepository = ProgramRepository(client: manager.client)
             let exerciseService = ExerciseService(client: manager.client)
+            let testingRepository = TestingRepository(client: manager.client)
             _router = StateObject(
                 wrappedValue: AppRouter(
                     authService: authService,
                     athleteService: athleteService,
                     trainingRepository: trainingRepository,
                     programRepository: programRepository,
-                    exerciseService: exerciseService
+                    exerciseService: exerciseService,
+                    testingRepository: testingRepository
                 )
             )
         } catch {
@@ -32,6 +48,7 @@ struct ForgeFitnessApp: App {
                     trainingRepository: nil,
                     programRepository: nil,
                     exerciseService: nil,
+                    testingRepository: nil,
                     startupErrorMessage: "Forge Fitness has an invalid Supabase configuration. Please contact support."
                 )
             )
@@ -67,7 +84,8 @@ struct ForgeFitnessApp: App {
                         AthleteHomeView(
                             athleteService: athleteService,
                             trainingRepository: trainingRepository,
-                            exerciseService: router.exerciseService
+                            exerciseService: router.exerciseService,
+                            testingRepository: router.testingRepository
                         )
                     }
                 case .coachHome:
@@ -75,7 +93,8 @@ struct ForgeFitnessApp: App {
                        let programRepository = router.programRepository {
                         CoachHomeView(
                             athleteService: athleteService,
-                            programRepository: programRepository
+                            programRepository: programRepository,
+                            testingRepository: router.testingRepository
                         )
                     }
                 case .loading:

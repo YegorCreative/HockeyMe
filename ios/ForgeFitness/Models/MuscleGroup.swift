@@ -1,4 +1,4 @@
-enum MuscleGroup: String, CaseIterable, Identifiable, Hashable {
+enum MuscleGroup: String, CaseIterable, Identifiable, Hashable, Codable {
     case quadriceps = "Quadriceps"
     case hamstrings = "Hamstrings"
     case glutes = "Glutes"

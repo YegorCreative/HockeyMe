@@ -146,6 +146,16 @@ async function run() {
     athleteAuth.access_token,
   );
 
+  await request("/rest/v1/rpc/link_coach_athlete", {
+    method: "POST",
+    key: serviceKey,
+    token: serviceKey,
+    body: {
+      existing_coach_user_id: coachUser.id,
+      existing_athlete_id: athlete.id,
+    },
+  });
+
   const exercises = await request(
     "/rest/v1/exercises?select=id,name&order=name",
     { token: coachAuth.access_token },
@@ -287,6 +297,18 @@ async function run() {
   assert(
     unrelatedPrograms.length === 0 && unrelatedAthletes.length === 0,
     "Unrelated coach gained access",
+  );
+  const unrelatedDirectory = await request(
+    "/rest/v1/rpc/get_assignable_athletes",
+    {
+      method: "POST",
+      token: unrelatedAuth.access_token,
+      body: {},
+    },
+  );
+  assert(
+    unrelatedDirectory.length === 0,
+    "Unrelated coach discovered athlete directory data",
   );
 
   let anonymousBlocked = false;
