@@ -87,6 +87,7 @@ struct ForgeFitnessApp: App {
 
     var body: some Scene {
         WindowGroup {
+<<<<<<< HEAD
             Group {
                 switch router.route {
                 case .authentication:
@@ -148,6 +149,96 @@ struct ForgeFitnessApp: App {
             .task {
                 await router.start()
             }
+=======
+            AppRootView(router: router)
+        }
+    }
+}
+
+private struct AppRootView: View {
+    @ObservedObject var router: AppRouter
+    @State private var isShowingSplash = true
+
+    var body: some View {
+        ZStack {
+            routedContent
+                .opacity(isShowingSplash ? 0 : 1)
+                .accessibilityHidden(isShowingSplash)
+
+            if isShowingSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .task {
+            await router.start()
+        }
+        .task {
+            await hideSplashAfterDelay()
+        }
+    }
+
+    @ViewBuilder
+    private var routedContent: some View {
+        switch router.route {
+        case .authentication:
+            AuthenticationView(
+                authService: router.authService,
+                initialErrorMessage: router.startupErrorMessage
+            )
+        case .athleteOnboarding:
+            if let athleteService = router.athleteService {
+                AthleteOnboardingView(
+                    athleteService: athleteService,
+                    onCompletion: {
+                        router.completeAthleteOnboarding()
+                    }
+                )
+            } else {
+                AuthenticationView(
+                    authService: nil,
+                    initialErrorMessage: router.startupErrorMessage
+                )
+            }
+        case .athleteHome:
+            if let athleteService = router.athleteService,
+               let trainingRepository = router.trainingRepository {
+                AthleteHomeView(
+                    athleteService: athleteService,
+                    trainingRepository: trainingRepository,
+                    exerciseService: router.exerciseService,
+                    testingRepository: router.testingRepository
+                )
+            }
+        case .coachHome:
+            if let athleteService = router.athleteService,
+               let programRepository = router.programRepository {
+                CoachHomeView(
+                    athleteService: athleteService,
+                    programRepository: programRepository,
+                    testingRepository: router.testingRepository
+                )
+            }
+        case .loading:
+            LoadingView()
+        }
+    }
+
+    private func hideSplashAfterDelay() async {
+        guard isShowingSplash else {
+            return
+        }
+
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.28)) {
+            isShowingSplash = false
+>>>>>>> d27d11ed7ec2f4be25867335d37f08470ccc506c
         }
     }
 }
