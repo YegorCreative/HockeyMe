@@ -20,6 +20,7 @@ struct AuthenticationView: View {
             VStack(spacing: AppSpacing.lg) {
                 Spacer(minLength: AppSpacing.xl)
 
+                environmentIndicator
                 logo
                 header
                 form
@@ -33,6 +34,24 @@ struct AuthenticationView: View {
         }
         .background(AppColors.background)
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    @ViewBuilder
+    private var environmentIndicator: some View {
+        if !AppEnvironment.build.isProduction {
+            Text(AppEnvironment.build.displayName)
+                .font(AppTypography.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(AppColors.warning)
+                .padding(.horizontal, AppSpacing.sm)
+                .padding(.vertical, AppSpacing.xs)
+                .overlay {
+                    Capsule().stroke(AppColors.warning, lineWidth: 1)
+                }
+                .accessibilityLabel(
+                    "\(AppEnvironment.build.displayName) environment"
+                )
+        }
     }
 
     private var logo: some View {

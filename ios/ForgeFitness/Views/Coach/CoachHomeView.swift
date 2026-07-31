@@ -5,15 +5,18 @@ struct CoachHomeView: View {
     private let programRepository: ProgramRepository
     private let testingRepository: TestingRepository?
     private let athleteService: AthleteService
+    private let organizationRepository: OrganizationRepository?
 
     init(
         athleteService: AthleteService,
         programRepository: ProgramRepository,
-        testingRepository: TestingRepository?
+        testingRepository: TestingRepository?,
+        organizationRepository: OrganizationRepository?
     ) {
         self.athleteService = athleteService
         self.programRepository = programRepository
         self.testingRepository = testingRepository
+        self.organizationRepository = organizationRepository
         _viewModel = StateObject(
             wrappedValue: CoachHomeViewModel(
                 athleteService: athleteService
@@ -49,6 +52,17 @@ struct CoachHomeView: View {
             }
                 .tabItem {
                     Label("Testing", systemImage: "stopwatch.fill")
+                }
+
+            Group {
+                if let organizationRepository {
+                    OrganizationDashboardView(
+                        repository: organizationRepository
+                    )
+                }
+            }
+                .tabItem {
+                    Label("Organization", systemImage: "building.2.fill")
                 }
         }
         .tint(AppColors.primary)

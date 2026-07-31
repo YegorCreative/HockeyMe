@@ -36,6 +36,7 @@ final class ProgramListViewModel: ObservableObject {
         await perform {
             let program = try await repository.createProgram()
             programs.insert(program, at: 0)
+            await AnalyticsService.shared.track(.programCreated)
             return program.id
         }
     }

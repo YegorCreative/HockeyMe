@@ -107,6 +107,7 @@
 				100000000000000000000008 /* Sources */,
 				100000000000000000000003 /* Frameworks */,
 				100000000000000000000009 /* Resources */,
+				400000000000000000000005 /* Validate Environment */,
 			);
 			buildRules = (
 			);
@@ -235,6 +236,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		400000000000000000000005 /* Validate Environment */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Validate Environment";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$ACTION\" != \"install\" ]; then\n  exit 0\nfi\ncase \"$CONFIGURATION\" in\n  Debug) forge_env=debug; forge_suffix=Debug ;;\n  Staging) forge_env=staging; forge_suffix=Staging ;;\n  Release) forge_env=production; forge_suffix=Production ;;\n  *) echo \"error: Unknown Forge environment configuration\"; exit 1 ;;\nesac\nforge_config=\"$SRCROOT/ForgeFitness/Backend/SupabaseConfig-$forge_suffix.plist\"\nif [ ! -f \"$forge_config\" ]; then\n  echo \"error: Missing $forge_suffix Supabase configuration\"\n  exit 1\nfi\nconfigured_env=$(/usr/libexec/PlistBuddy -c 'Print :environment' \"$forge_config\")\nconfigured_url=$(/usr/libexec/PlistBuddy -c 'Print :url' \"$forge_config\")\nif [ \"$configured_env\" != \"$forge_env\" ]; then\n  echo \"error: Supabase environment does not match build configuration\"\n  exit 1\nfi\ncase \"$configured_url\" in\n  *YOUR_*|*placeholder*|'') echo \"error: Supabase URL is not configured\"; exit 1 ;;\nesac\nproject_ref=$(printf '%s' \"$configured_url\" | sed -E 's#https://([^.]+).*#\\1#')\nif [ \"$forge_env\" = \"production\" ] && [ \"$project_ref\" != \"xconmgstbnfspqrwtlmh\" ]; then\n  echo \"error: Production archive does not target production\"\n  exit 1\nfi\nif [ \"$forge_env\" != \"production\" ] && [ \"$project_ref\" = \"xconmgstbnfspqrwtlmh\" ]; then\n  echo \"error: Non-production archive targets production\"\n  exit 1\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		100000000000000000000008 /* Sources */ = {
@@ -408,6 +431,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Forge Fitness";
+				INFOPLIST_KEY_ForgeProductionProjectRef = xconmgstbnfspqrwtlmh;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -421,6 +446,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -437,6 +463,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Forge Fitness";
+				INFOPLIST_KEY_ForgeProductionProjectRef = xconmgstbnfspqrwtlmh;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -450,6 +478,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -464,6 +493,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Fitness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Forge Fitness";
 			};
@@ -478,6 +508,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Fitness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Forge Fitness";
 			};
@@ -491,6 +522,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = "Forge Fitness";
 			};
@@ -504,10 +536,88 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = "Forge Fitness";
 			};
 			name = Release;
+		};
+		400000000000000000000001 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "STAGING $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Staging;
+		};
+		400000000000000000000002 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Forge Fitness Staging";
+				INFOPLIST_KEY_ForgeProductionProjectRef = xconmgstbnfspqrwtlmh;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.staging;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "STAGING $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Staging;
+		};
+		400000000000000000000003 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.staging.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Fitness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Forge Fitness";
+			};
+			name = Staging;
+		};
+		400000000000000000000004 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.app.staging.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "Forge Fitness";
+			};
+			name = Staging;
 		};
 /* End XCBuildConfiguration section */
 
@@ -516,6 +626,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				10000000000000000000000E /* Debug */,
+				400000000000000000000002 /* Staging */,
 				10000000000000000000000F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -525,6 +636,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				10000000000000000000000C /* Debug */,
+				400000000000000000000001 /* Staging */,
 				10000000000000000000000D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -534,6 +646,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				300000000000000000000013 /* Debug */,
+				400000000000000000000003 /* Staging */,
 				300000000000000000000014 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -543,6 +656,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				300000000000000000000015 /* Debug */,
+				400000000000000000000004 /* Staging */,
 				300000000000000000000016 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;

@@ -5,6 +5,7 @@ import SwiftUI
 enum TestingViewerRole {
     case coach
     case athlete
+    case parent
 }
 
 @MainActor
@@ -159,6 +160,7 @@ final class TestingDashboardViewModel: ObservableObject {
                 notes: notes,
                 source: role == .coach ? .coach : .athlete
             )
+            await AnalyticsService.shared.track(.testingResultRecorded)
             syncMessage = await repository.hasPendingResults()
                 ? "Saved offline — sync pending"
                 : "Synced"

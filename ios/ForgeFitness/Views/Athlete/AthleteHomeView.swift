@@ -6,17 +6,20 @@ struct AthleteHomeView: View {
     private let trainingRepository: TrainingRepository
     private let exerciseService: ExerciseService?
     private let testingRepository: TestingRepository?
+    private let organizationRepository: OrganizationRepository?
 
     init(
         athleteService: AthleteService,
         trainingRepository: TrainingRepository,
         exerciseService: ExerciseService?,
-        testingRepository: TestingRepository?
+        testingRepository: TestingRepository?,
+        organizationRepository: OrganizationRepository?
     ) {
         self.athleteService = athleteService
         self.trainingRepository = trainingRepository
         self.exerciseService = exerciseService
         self.testingRepository = testingRepository
+        self.organizationRepository = organizationRepository
         _viewModel = StateObject(
             wrappedValue: AthleteHomeViewModel(
                 athleteService: athleteService
@@ -54,9 +57,17 @@ struct AthleteHomeView: View {
                     Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
                 }
 
-            PlaceholderTabView(title: "Messages")
+            Group {
+                if let organizationRepository {
+                    OrganizationDashboardView(
+                        repository: organizationRepository
+                    )
+                } else {
+                    PlaceholderTabView(title: "Teams")
+                }
+            }
                 .tabItem {
-                    Label("Messages", systemImage: "bubble.left.and.bubble.right.fill")
+                    Label("Teams", systemImage: "person.3.fill")
                 }
 
             AthleteProfileView(athleteService: athleteService)

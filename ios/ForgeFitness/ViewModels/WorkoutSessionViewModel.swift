@@ -123,6 +123,7 @@ final class WorkoutSessionViewModel: ObservableObject {
             apply(session)
             phase = .active
             moveToFirstIncompleteExercise()
+            await AnalyticsService.shared.track(.workoutStarted)
         } catch {
             errorMessage = friendlyMessage(for: error)
         }
@@ -162,6 +163,7 @@ final class WorkoutSessionViewModel: ObservableObject {
                 prescription: currentExercise
             )
             completedSets.append(savedSet)
+            await AnalyticsService.shared.track(.workoutSetCompleted)
             syncStatusMessage = await repository.hasPendingLogs()
                 ? "Saved offline — sync pending"
                 : "Synced"
@@ -194,6 +196,7 @@ final class WorkoutSessionViewModel: ObservableObject {
                 ? "Workout saved offline — sync pending"
                 : "Workout synced"
             phase = .summary
+            await AnalyticsService.shared.track(.workoutCompleted)
         } catch {
             errorMessage = friendlyMessage(for: error)
         }

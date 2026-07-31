@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: iOS build and tests
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/ForgeFitness.xcodeproj \
+            -scheme "Forge Fitness"
+      - name: Build with warnings as errors
+        run: |
+          xcodebuild build \
+            -project ios/ForgeFitness.xcodeproj \
+            -scheme "Forge Fitness" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Unit and UI tests
+        run: |
+          DEVICE=$(xcrun simctl list devices available |
+            awk -F '[()]' '/iPhone/ {print $2; exit}')
+          test -n "$DEVICE"
+          xcodebuild test \
+            -project ios/ForgeFitness.xcodeproj \
+            -scheme "Forge Fitness" \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: brew install swiftlint
+      - run: swiftlint lint --strict --no-cache
+
+  backend:
+    name: Supabase migration and database lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node backend/supabase/scripts/verify-migrations.mjs
+      - run: npx --yes supabase@latest start --workdir backend
+      - run: npx --yes supabase@latest db reset --local --workdir backend
+      - run: npx --yes supabase@latest db lint --local --level warning --workdir backend
+      - name: Edge Function type check
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check backend/supabase/functions/send-organization-invitation/index.ts
+      - if: always()
+        run: npx --yes supabase@latest stop --workdir backend --no-backup
+
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node backend/supabase/scripts/validate-docs.mjs
+      - run: npx --yes markdownlint-cli2 "README.md" "docs/**/*.md" "backend/**/*.md"

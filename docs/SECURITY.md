@@ -48,3 +48,46 @@ Before each release:
 
 Report suspected key exposure by rotating the key in Supabase immediately,
 revoking sessions when warranted, and auditing Auth/Postgres logs.
+
+## Organization authorization
+
+- Owners and administrators manage tenant membership and configuration.
+- Team staff see athletes only when both are actively assigned to a team.
+- Athletic trainers receive athlete access only through assigned teams.
+- Parent reads require an explicit parent-to-athlete team link and never permit
+  profile, workout, testing, attendance, or progress writes.
+- Validation triggers reject cross-organization team and season identifiers.
+- Invitation secrets are hashed, email-bound, expiring, revocable, and returned
+  only once to an administrator.
+- Ownership transfer is atomic and limited to the current owner.
+
+Release verification includes owner, administrator, assigned staff, athlete,
+linked parent, unrelated member, cross-organization member, and anonymous
+access matrices.
+
+## Environment isolation and invitation delivery
+
+- Debug, Staging, and Production load different ignored configuration files.
+- Debug and Staging reject URLs matching the production project reference.
+- Staging scripts require explicit matching project confirmations and reject
+  the production reference or a reused production service-role credential.
+- Tests generate identities and never print passwords, credentials, provider
+  responses, raw invitation tokens, or invitation secrets.
+- Invitation creation is service-role-only. The client invokes an Edge Function
+  with its user session and receives delivery status only.
+- Provider credentials remain in Edge Function secrets. Rate limits apply per
+  organization, requesting user, and hashed network identifier.
+- Accepted, expired, revoked, and failed-delivery invitations cannot replay.
+
+## Build, signing, and operational audit
+
+- Signing certificates, profiles, App Store keys, Supabase configuration, and
+  team ID exist only in protected CI secrets.
+- Release jobs validate required variables and never echo secret values.
+- Gitleaks, CodeQL, dependency review, and Dependabot cover source and supply
+  chain changes.
+- The app has no custom entitlements, Keychain sharing, background modes,
+  advertising identifiers, HealthKit, push, or associated domains.
+- Supabase owns secure session persistence; the app has no custom token store.
+- Logs drop sensitive metadata names and keep accepted values private.
+- Feature flags are explicitly non-secret, read-only client configuration.

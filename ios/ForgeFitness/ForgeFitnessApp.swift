@@ -7,6 +7,14 @@ struct ForgeFitnessApp: App {
     @StateObject private var router: AppRouter
 
     init() {
+        DiagnosticsService.shared.start()
+        LoggingService.shared.log(
+            "application_launched",
+            category: .application,
+            metadata: LogMetadata([
+                "environment": AppEnvironment.build.rawValue
+            ])
+        )
         if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
             _router = StateObject(
                 wrappedValue: AppRouter(
@@ -15,7 +23,8 @@ struct ForgeFitnessApp: App {
                     trainingRepository: nil,
                     programRepository: nil,
                     exerciseService: nil,
-                    testingRepository: nil
+                    testingRepository: nil,
+                    organizationRepository: nil
                 )
             )
             return
@@ -23,12 +32,31 @@ struct ForgeFitnessApp: App {
 
         do {
             let manager = try SupabaseManager()
+            let featureFlags = FeatureFlagService(client: manager.client)
+            Task {
+                do {
+                    try await featureFlags.refresh()
+                } catch {
+                    LoggingService.shared.log(
+                        "feature_flags_refresh_failed",
+                        category: .errors,
+                        level: .warning,
+                        metadata: LogMetadata([
+                            "error_type":
+                                String(describing: type(of: error))
+                        ])
+                    )
+                }
+            }
             let authService = AuthService(client: manager.client)
             let athleteService = AthleteService(client: manager.client)
             let trainingRepository = TrainingRepository(client: manager.client)
             let programRepository = ProgramRepository(client: manager.client)
             let exerciseService = ExerciseService(client: manager.client)
             let testingRepository = TestingRepository(client: manager.client)
+            let organizationRepository = OrganizationRepository(
+                client: manager.client
+            )
             _router = StateObject(
                 wrappedValue: AppRouter(
                     authService: authService,
@@ -36,7 +64,8 @@ struct ForgeFitnessApp: App {
                     trainingRepository: trainingRepository,
                     programRepository: programRepository,
                     exerciseService: exerciseService,
-                    testingRepository: testingRepository
+                    testingRepository: testingRepository,
+                    organizationRepository: organizationRepository
                 )
             )
         } catch {
@@ -49,6 +78,7 @@ struct ForgeFitnessApp: App {
                     programRepository: nil,
                     exerciseService: nil,
                     testingRepository: nil,
+                    organizationRepository: nil,
                     startupErrorMessage: "Forge Fitness has an invalid Supabase configuration. Please contact support."
                 )
             )
@@ -85,7 +115,9 @@ struct ForgeFitnessApp: App {
                             athleteService: athleteService,
                             trainingRepository: trainingRepository,
                             exerciseService: router.exerciseService,
-                            testingRepository: router.testingRepository
+                            testingRepository: router.testingRepository,
+                            organizationRepository:
+                                router.organizationRepository
                         )
                     }
                 case .coachHome:
@@ -94,7 +126,19 @@ struct ForgeFitnessApp: App {
                         CoachHomeView(
                             athleteService: athleteService,
                             programRepository: programRepository,
-                            testingRepository: router.testingRepository
+                            testingRepository: router.testingRepository,
+                            organizationRepository:
+                                router.organizationRepository
+                        )
+                    }
+                case .parentHome:
+                    if let organizationRepository =
+                        router.organizationRepository,
+                       let athleteService = router.athleteService {
+                        ParentHomeView(
+                            organizationRepository: organizationRepository,
+                            testingRepository: router.testingRepository,
+                            athleteService: athleteService
                         )
                     }
                 case .loading:

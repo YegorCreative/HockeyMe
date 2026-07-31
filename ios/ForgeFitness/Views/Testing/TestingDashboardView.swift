@@ -421,7 +421,11 @@ private struct TestingSessionEntryView: View {
                         }
                     }
                     .disabled(
-                        role == .athlete && !session.allowsAthleteEntry
+                        role == .parent
+                            || (
+                                role == .athlete
+                                    && !session.allowsAthleteEntry
+                            )
                     )
                 }
             }
@@ -429,7 +433,9 @@ private struct TestingSessionEntryView: View {
             Button("Complete Test") {
                 Task { await viewModel.complete(session) }
             }
-            .disabled(session.status == .completed)
+            .disabled(
+                session.status == .completed || role == .parent
+            )
         }
         .navigationTitle("Record Results")
     }

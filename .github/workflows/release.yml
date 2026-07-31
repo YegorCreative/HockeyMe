@@ -1,0 +1,111 @@
+name: TestFlight Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        required: true
+        type: choice
+        options: [staging, production]
+      version:
+        description: Marketing version (for example 1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: macos-15
+    timeout-minutes: 45
+    environment: ${{ inputs.environment }}
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      MARKETING_VERSION: ${{ inputs.version }}
+      APP_STORE_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
+      APP_STORE_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
+      APP_STORE_PRIVATE_KEY: ${{ secrets.APP_STORE_PRIVATE_KEY }}
+      SIGNING_CERTIFICATE_P12: ${{ secrets.SIGNING_CERTIFICATE_P12 }}
+      SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+      MOBILEPROVISION_BASE64: ${{ secrets.MOBILEPROVISION_BASE64 }}
+      SUPABASE_CONFIG_PLIST: ${{ secrets.SUPABASE_CONFIG_PLIST }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Require release secrets
+        run: |
+          for name in APP_STORE_KEY_ID APP_STORE_ISSUER_ID \
+            APP_STORE_PRIVATE_KEY SIGNING_CERTIFICATE_P12 \
+            SIGNING_CERTIFICATE_PASSWORD MOBILEPROVISION_BASE64 \
+            SUPABASE_CONFIG_PLIST APPLE_TEAM_ID; do
+            test -n "${!name}" || { echo "::error::$name is missing"; exit 1; }
+          done
+      - name: Select configuration
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "CONFIGURATION=Release" >> "$GITHUB_ENV"
+            echo "CONFIG_SUFFIX=Production" >> "$GITHUB_ENV"
+          else
+            echo "CONFIGURATION=Staging" >> "$GITHUB_ENV"
+            echo "CONFIG_SUFFIX=Staging" >> "$GITHUB_ENV"
+          fi
+      - name: Install signing assets
+        env:
+          KEYCHAIN_PASSWORD: ${{ runner.temp }}-${{ github.run_id }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/signing.p12"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo "$SIGNING_CERTIFICATE_P12" | base64 --decode > "$CERTIFICATE_PATH"
+          echo "$MOBILEPROVISION_BASE64" | base64 --decode > "$PROFILE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import "$CERTIFICATE_PATH" -P "$SIGNING_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k build.keychain
+          security list-keychain -d user -s build.keychain
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+      - name: Inject environment configuration
+        run: |
+          CONFIG_PATH="ios/ForgeFitness/Backend/SupabaseConfig-$CONFIG_SUFFIX.plist"
+          printf '%s' "$SUPABASE_CONFIG_PLIST" > "$CONFIG_PATH"
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project ios/ForgeFitness.xcodeproj \
+            -scheme "Forge Fitness" \
+            -configuration "$CONFIGURATION" \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/ForgeFitness.xcarchive" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/ForgeFitness.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist .github/ExportOptions.plist
+      - name: Upload to TestFlight
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "$APP_STORE_PRIVATE_KEY" \
+            > "$HOME/.appstoreconnect/private_keys/AuthKey_$APP_STORE_KEY_ID.p8"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$RUNNER_TEMP/export/Forge Fitness.ipa" \
+            --apiKey "$APP_STORE_KEY_ID" \
+            --apiIssuer "$APP_STORE_ISSUER_ID"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forge-fitness-${{ inputs.environment }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/export/*.ipa

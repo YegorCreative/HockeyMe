@@ -143,21 +143,22 @@ final class AuthService {
     }
 
     private func log(_ error: Error, operation: String) {
-#if DEBUG
+        var metadata = [
+            "operation": operation,
+            "error_type": String(describing: type(of: error))
+        ]
         if let authError = error as? AuthError {
-            print(
-                "[Supabase Auth] \(operation) failed: "
-                    + "code=\(authError.errorCode.rawValue), "
-                    + "message=\(authError.message)"
-            )
+            metadata["error_code"] = authError.errorCode.rawValue
         } else {
             let nsError = error as NSError
-            print(
-                "[Supabase Auth] \(operation) failed: "
-                    + "type=\(type(of: error)), "
-                    + "domain=\(nsError.domain), code=\(nsError.code)"
-            )
+            metadata["error_domain"] = nsError.domain
+            metadata["error_code"] = "\(nsError.code)"
         }
-#endif
+        LoggingService.shared.log(
+            "authentication_request_failed",
+            category: .authentication,
+            level: .error,
+            metadata: LogMetadata(metadata)
+        )
     }
 }

@@ -5,6 +5,7 @@ enum AppRoute: Equatable {
     case athleteOnboarding
     case athleteHome
     case coachHome
+    case parentHome
     case loading
 }
 
@@ -18,6 +19,7 @@ final class AppRouter: ObservableObject {
     let programRepository: ProgramRepository?
     let exerciseService: ExerciseService?
     let testingRepository: TestingRepository?
+    let organizationRepository: OrganizationRepository?
     let startupErrorMessage: String?
 
     private var isStarted = false
@@ -30,6 +32,7 @@ final class AppRouter: ObservableObject {
         programRepository: ProgramRepository?,
         exerciseService: ExerciseService?,
         testingRepository: TestingRepository? = nil,
+        organizationRepository: OrganizationRepository? = nil,
         startupErrorMessage: String? = nil
     ) {
         self.authService = authService
@@ -38,6 +41,7 @@ final class AppRouter: ObservableObject {
         self.programRepository = programRepository
         self.exerciseService = exerciseService
         self.testingRepository = testingRepository
+        self.organizationRepository = organizationRepository
         self.startupErrorMessage = startupErrorMessage
     }
 
@@ -85,6 +89,18 @@ final class AppRouter: ObservableObject {
     }
 
     private func routeAuthenticatedUser() async {
+        if let context = try? await organizationRepository?.loadContext() {
+            if context.roles.contains(where: \.isStaff) {
+                route = .coachHome
+                return
+            }
+            if context.roles.contains(.parent)
+                && !context.roles.contains(.athlete) {
+                route = .parentHome
+                return
+            }
+        }
+
         if await programRepository?.isCurrentUserCoach() == true {
             route = .coachHome
             return

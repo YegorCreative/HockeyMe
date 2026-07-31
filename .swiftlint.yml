@@ -1,0 +1,16 @@
+included:
+  - ios/ForgeFitness
+  - ios/ForgeFitnessTests
+  - ios/ForgeFitnessUITests
+
+only_rules:
+  - duplicate_imports
+  - empty_count
+  - no_space_in_method_call
+  - trailing_newline
+  - trailing_whitespace
+  - unneeded_break_in_switch
+  - vertical_whitespace
+
+reporter: github-actions-logging
+strict: true

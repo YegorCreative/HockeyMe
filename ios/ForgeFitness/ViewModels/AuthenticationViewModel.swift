@@ -35,10 +35,15 @@ final class AuthenticationViewModel: ObservableObject {
                 email: email.trimmingCharacters(in: .whitespacesAndNewlines),
                 password: password
             )
+            await AnalyticsService.shared.track(
+                .authenticationSignInSucceeded
+            )
         } catch let error as AuthenticationServiceError {
             errorMessage = error.localizedDescription
+            await AnalyticsService.shared.track(.authenticationSignInFailed)
         } catch {
             errorMessage = AuthenticationServiceError.unknown.localizedDescription
+            await AnalyticsService.shared.track(.authenticationSignInFailed)
         }
 
         isLoading = false
@@ -65,6 +70,9 @@ final class AuthenticationViewModel: ObservableObject {
             if case .emailConfirmationRequired = result {
                 statusMessage = "Check your email to confirm your account, then sign in."
             }
+            await AnalyticsService.shared.track(
+                .authenticationAccountCreated
+            )
         } catch let error as AuthenticationServiceError {
             errorMessage = error.localizedDescription
         } catch {

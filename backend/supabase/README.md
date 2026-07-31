@@ -168,3 +168,55 @@ npx --yes supabase@latest db lint --linked --level warning --workdir backend
 
 Always confirm which project is linked in `backend/supabase/.temp/project-ref`
 before running a command that writes data.
+
+## Phase 6 organization bootstrap
+
+Migrations `20260730190000_organizations.sql` and
+`20260730200000_organization_workflows.sql` establish tenant-scoped
+organizations, multi-role memberships, teams, seasons, assignments, and
+invitations. They insert no users or organization data.
+
+An authenticated user creates the initial organization with
+`create_organization`; that transaction makes the user owner. Owners and
+administrators invite through the `send-organization-invitation` Edge Function.
+The iOS client never receives the raw code. Resend credentials remain in
+project secrets and only a SHA-256 token hash is stored. Acceptance is bound to
+the signed-in Auth email. `clone_team_to_season` preserves prior history.
+
+```bash
+node backend/supabase/scripts/phase6-anonymous-rls.mjs
+```
+
+Authenticated tenant tests require isolated development accounts in two
+organizations. Verify assigned staff, trainer scope, parent read-only access,
+unrelated-team and cross-organization denial, invitation expiry/revocation/
+duplicate prevention, and ownership transfer. Never create these fixtures in
+production.
+
+## Phase 6.1 staging validation
+
+Create a new empty Supabase project rather than cloning production. It must
+have distinct URL/publishable/service-role keys, database, Auth users, Storage,
+and email sender configuration. Copy `.env.staging.example` to the ignored
+`.env.staging`, then run:
+
+```bash
+node backend/supabase/scripts/guard-staging.mjs
+npx --yes supabase@latest link \
+  --project-ref "$FORGE_STAGING_PROJECT_REF" --workdir backend
+npx --yes supabase@latest db push --workdir backend
+npx --yes supabase@latest db lint --linked --level warning --workdir backend
+npx --yes supabase@latest functions deploy \
+  send-organization-invitation --workdir backend
+node backend/supabase/scripts/phase6-anonymous-rls.mjs
+node backend/supabase/scripts/phase6-staging-rls.mjs
+```
+
+Configure staging-only Edge secrets: `RESEND_API_KEY`,
+`INVITATION_FROM_EMAIL`, `INVITATION_ACCEPT_URL`,
+`APP_ENVIRONMENT=staging`, and `FORGE_PRODUCTION_PROJECT_REF`. The matrix
+generates eleven identities, never prints passwords or raw tokens, uses direct
+REST/RPC calls, prints a summary, and cleans up in `finally`. Set
+`STAGING_DELIVERY_TEST_EMAIL` to a controlled inbox for delivery verification.
+Missing staging credentials are a release blocker, not permission to use
+production.

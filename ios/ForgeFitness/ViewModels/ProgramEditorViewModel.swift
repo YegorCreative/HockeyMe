@@ -61,6 +61,9 @@ final class ProgramEditorViewModel: ObservableObject {
                 for: program
             )
             self.program?.status = published ? .published : .draft
+            if published {
+                await AnalyticsService.shared.track(.programPublished)
+            }
         }
     }
 

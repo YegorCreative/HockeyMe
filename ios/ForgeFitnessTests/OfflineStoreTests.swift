@@ -189,4 +189,63 @@ final class OfflineStoreTests: XCTestCase {
         XCTAssertEqual(queued.count, 1)
         XCTAssertEqual(queued.first?.result.value, 25)
     }
+
+    func testOrganizationContextRoundTripAndUserIsolation() async throws {
+        let userID = UUID()
+        let otherUserID = UUID()
+        let organizationID = UUID()
+        let context = OrganizationContext(
+            organizations: [
+                Organization(
+                    id: organizationID,
+                    name: "Forge Development",
+                    slug: "forge-development",
+                    ownerUserID: userID
+                )
+            ],
+            memberships: [
+                OrganizationMembership(
+                    id: UUID(),
+                    organizationID: organizationID,
+                    userID: userID,
+                    displayName: "Development Coach",
+                    email: "coach@example.test",
+                    roles: [.headCoach, .strengthCoach],
+                    status: "active"
+                )
+            ],
+            teams: [
+                OrganizationTeam(
+                    id: UUID(),
+                    organizationID: organizationID,
+                    name: "U18",
+                    ageGroup: "U18",
+                    isArchived: false
+                )
+            ],
+            seasons: []
+        )
+
+        try await store.saveOrganizationContext(context, userID: userID)
+
+        let restored = await store.organizationContext(userID: userID)
+        let unrelated = await store.organizationContext(userID: otherUserID)
+        XCTAssertEqual(restored, context)
+        XCTAssertEqual(
+            restored?.roles,
+            Set([.headCoach, .strengthCoach])
+        )
+        XCTAssertNil(unrelated)
+    }
+
+    func testOrganizationRolesSeparateStaffAndReadOnlyParent() {
+        XCTAssertTrue(OrganizationRole.organizationOwner.isStaff)
+        XCTAssertTrue(OrganizationRole.athleticTrainer.isStaff)
+        XCTAssertFalse(OrganizationRole.athlete.isStaff)
+        XCTAssertFalse(OrganizationRole.parent.isStaff)
+        XCTAssertEqual(
+            OrganizationRole.allCases.count,
+            8
+        )
+    }
 }

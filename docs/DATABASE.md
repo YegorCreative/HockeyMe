@@ -60,3 +60,27 @@ npx --yes supabase@latest db push --dry-run --workdir backend
 Apply to development, test, staging, then production. Never use seed or
 end-to-end scripts against production. See `DEPLOYMENT.md` for rollback and
 recovery.
+
+## Organization model
+
+- `organizations` owns the tenant boundary and current owner.
+- `organization_members` links Auth users with validated multi-role arrays.
+- `teams` supports archive and soft deletion.
+- `team_members` assigns staff, athletes, and parent links.
+- `seasons` and `season_assignments` retain historical team placement.
+- `invitations` stores only token hashes and supports roles, teams, expiration,
+  acceptance/decline, revocation, and duplicate prevention.
+
+Scoped relationship tables repeat `organization_id`; validation triggers reject
+cross-organization UUID combinations. Atomic workflows use
+`create_organization`, `transfer_organization_ownership`,
+the service-only invitation delivery workflow,
+`respond_to_organization_invitation`, and `clone_team_to_season`.
+
+Phase 6.1 adds `invitation_delivery_attempts`, an RLS-inaccessible rate-limit
+ledger containing only email/network hashes. Invitation rows record delivery
+state without provider credentials or raw tokens. Service-role-only delivery
+functions create and finalize invitations; authenticated users may accept,
+decline, or revoke only through scoped RPCs. `move_athlete_to_team` atomically
+updates active team membership and season assignment, while the hardened
+ownership transfer preserves a valid role for the outgoing owner.

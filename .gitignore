@@ -26,6 +26,10 @@ pnpm-debug.log*
 .supabase/
 supabase/.branches/
 supabase/.temp/
+ios/ForgeFitness/Backend/SupabaseConfig-*.plist
+!ios/ForgeFitness/Backend/SupabaseConfig-*.example.plist
+backend/supabase/.env.*
+!backend/supabase/.env.*.example
 
 # macOS
 .DS_Store

@@ -339,6 +339,7 @@ final class TrainingRepository: @unchecked Sendable {
     }
 
     func synchronizePendingLogs() async throws {
+        await AnalyticsService.shared.track(.offlineSyncStarted)
         let userID = try await client.auth.session.user.id
         var remainingSets: [PendingWorkoutSet] = []
         for pending in await offlineStore.pendingSets(userID: userID) {
@@ -392,6 +393,7 @@ final class TrainingRepository: @unchecked Sendable {
             remainingFinishes,
             userID: userID
         )
+        await AnalyticsService.shared.track(.offlineSyncCompleted)
     }
 
     func hasPendingLogs() async -> Bool {

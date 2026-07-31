@@ -63,6 +63,23 @@ actor OfflineStore {
         )
     }
 
+    func saveOrganizationContext(
+        _ context: OrganizationContext,
+        userID: UUID
+    ) throws {
+        try save(
+            context,
+            as: filename("organization-context", userID: userID)
+        )
+    }
+
+    func organizationContext(userID: UUID) -> OrganizationContext? {
+        load(
+            OrganizationContext.self,
+            from: filename("organization-context", userID: userID)
+        )
+    }
+
     func enqueueTestingResult(
         _ result: PendingTestingResult,
         userID: UUID
