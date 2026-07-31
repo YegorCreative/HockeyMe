@@ -105,7 +105,7 @@ jobs:
             --file "$RUNNER_TEMP/export/Forge Fitness.ipa" \
             --apiKey "$APP_STORE_KEY_ID" \
             --apiIssuer "$APP_STORE_ISSUER_ID"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: forge-fitness-${{ inputs.environment }}-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
