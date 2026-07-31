@@ -19,12 +19,11 @@ The review combined:
 
 ### Critical review constraint
 
-Developer Mode currently routes every Athlete destination to the same
-`DeveloperFeatureView`. It proves that roles, destinations, and production-shaped
-sample records are available, but it does not render the production Athlete
-screens. Therefore it cannot visually prove real loading, empty, error, Dark
-Mode, Dynamic Type, animation, or navigation behavior. Correcting that should be
-the next Developer Mode quality task, without changing production behavior.
+At the time of the Phase 8.0 review, Developer Mode routed every Athlete
+destination to the same data inspector. Phase 8.1 resolved this constraint:
+Developer Mode now launches the production Athlete, Coach, and Parent view
+hierarchies with in-memory repositories. The original limitation remains
+recorded here to preserve the review context.
 
 ## Cross-product findings
 
@@ -44,8 +43,8 @@ the next Developer Mode quality task, without changing production behavior.
 
 ### Current weaknesses
 
-- **Critical:** Developer Mode does not display the production screens it claims
-  to represent.
+- **Resolved in Phase 8.1:** Developer Mode now displays production role
+  experiences with in-memory data.
 - **High:** Two-column metric layouts and horizontal control groups can compress
   badly at accessibility text sizes.
 - **High:** Destructive workout completion has no confirmation step. This is
@@ -398,8 +397,8 @@ the next Developer Mode quality task, without changing production behavior.
 
 ### Critical
 
-1. Make Developer Mode render actual production Athlete screens and state
-   variants.
+1. ~~Make Developer Mode render actual production Athlete screens and state
+   variants.~~ Resolved in Phase 8.1.
 2. Confirm before destructive workout completion.
 3. Correct Athlete team navigation so it cannot present management UI.
 

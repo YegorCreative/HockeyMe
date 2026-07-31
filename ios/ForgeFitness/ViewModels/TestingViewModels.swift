@@ -51,9 +51,8 @@ final class TestingDashboardViewModel: ObservableObject {
 
     var analytics: [TestingMetricAnalytics] {
         let metrics = Dictionary(
-            uniqueKeysWithValues: sessions
-                .flatMap(\.metrics)
-                .map { ($0.id, $0) }
+            grouping: sessions.flatMap(\.metrics),
+            by: \.id
         )
         let results = sessions.flatMap(\.results)
         let seasonStart = Calendar.current.date(
@@ -61,7 +60,10 @@ final class TestingDashboardViewModel: ObservableObject {
             value: -1,
             to: Date()
         ) ?? .distantPast
-        return metrics.values.compactMap { metric in
+        return metrics.values.compactMap { matchingMetrics in
+            guard let metric = matchingMetrics.first else {
+                return nil
+            }
             let metricResults = results.filter { $0.metricID == metric.id }
             let latestAthleteID = metricResults.max {
                 $0.recordedAt < $1.recordedAt

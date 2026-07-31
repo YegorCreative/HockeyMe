@@ -51,6 +51,7 @@ final class AthleteProfileViewModel: ObservableObject {
         }
 
         isSaving = true
+        defer { isSaving = false }
         errorMessage = nil
         successMessage = nil
 
@@ -75,10 +76,9 @@ final class AthleteProfileViewModel: ObservableObject {
             self.athlete = updatedAthlete
             successMessage = "Profile updated."
         } catch {
-            errorMessage = error.localizedDescription
+            guard !(error is CancellationError) else { return }
+            errorMessage = AppErrorPresentation.make(for: error).combinedMessage
         }
-
-        isSaving = false
     }
 
     private func load() async {
@@ -87,6 +87,7 @@ final class AthleteProfileViewModel: ObservableObject {
         }
 
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
 
         do {
@@ -95,10 +96,9 @@ final class AthleteProfileViewModel: ObservableObject {
             apply(athlete)
             hasLoaded = true
         } catch {
-            errorMessage = error.localizedDescription
+            guard !(error is CancellationError) else { return }
+            errorMessage = AppErrorPresentation.make(for: error).combinedMessage
         }
-
-        isLoading = false
     }
 
     private func apply(_ athlete: Athlete) {

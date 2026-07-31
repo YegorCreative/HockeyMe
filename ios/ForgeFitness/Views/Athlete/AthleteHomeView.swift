@@ -7,19 +7,22 @@ struct AthleteHomeView: View {
     private let exerciseService: ExerciseService?
     private let testingRepository: TestingRepository?
     private let organizationRepository: OrganizationRepository?
+    private let showsDeveloperSettings: Bool
 
     init(
         athleteService: AthleteService,
         trainingRepository: TrainingRepository,
         exerciseService: ExerciseService?,
         testingRepository: TestingRepository?,
-        organizationRepository: OrganizationRepository?
+        organizationRepository: OrganizationRepository?,
+        showsDeveloperSettings: Bool = false
     ) {
         self.athleteService = athleteService
         self.trainingRepository = trainingRepository
         self.exerciseService = exerciseService
         self.testingRepository = testingRepository
         self.organizationRepository = organizationRepository
+        self.showsDeveloperSettings = showsDeveloperSettings
         _viewModel = StateObject(
             wrappedValue: AthleteHomeViewModel(
                 athleteService: athleteService
@@ -74,6 +77,15 @@ struct AthleteHomeView: View {
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle.fill")
                 }
+
+#if DEBUG
+            if showsDeveloperSettings {
+                DeveloperSettingsView()
+                    .tabItem {
+                        Label("Settings", systemImage: "gearshape.fill")
+                    }
+            }
+#endif
         }
         .tint(AppColors.primary)
         .task {

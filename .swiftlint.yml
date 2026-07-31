@@ -2,6 +2,8 @@ included:
   - ios/ForgeFitness
   - ios/ForgeFitnessTests
   - ios/ForgeFitnessUITests
+  - ios/macOS
+  - ios/ForgeCoachTests
 
 only_rules:
   - duplicate_imports

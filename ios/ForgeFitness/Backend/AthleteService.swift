@@ -2,8 +2,11 @@ import Foundation
 import Supabase
 
 final class AthleteService {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
     private let offlineStore: OfflineStore
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(
         client: SupabaseClient,
@@ -11,9 +14,25 @@ final class AthleteService {
     ) {
         self.client = client
         self.offlineStore = offlineStore
+#if DEBUG
+        developerStore = nil
+#endif
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        offlineStore = .shared
+        self.developerStore = developerStore
+    }
+#endif
+
     func hasProfile() async throws -> Bool {
+#if DEBUG
+        if developerStore != nil {
+            return true
+        }
+#endif
         let userID = try await currentUserID()
         let profiles: [AthleteID] = try await client
             .from("athletes")
@@ -27,6 +46,12 @@ final class AthleteService {
     }
 
     func saveProfile(_ athlete: Athlete) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateAthlete(athlete)
+            return
+        }
+#endif
         let profile = AthletePayload(
             userID: athlete.userID,
             firstName: athlete.firstName,
@@ -50,6 +75,11 @@ final class AthleteService {
     }
 
     func loadCurrentProfile() async throws -> Athlete {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.currentAthlete()
+        }
+#endif
         do {
             let userID = try await currentUserID()
             let profiles: [AthleteRecord] = try await client
@@ -78,6 +108,12 @@ final class AthleteService {
     }
 
     func updateProfile(_ athlete: Athlete) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateAthlete(athlete)
+            return
+        }
+#endif
         let userID = try await currentUserID()
         guard athlete.userID == userID else {
             throw AthleteServiceError.unauthorized
@@ -105,6 +141,11 @@ final class AthleteService {
     }
 
     func loadCoachAthletes() async throws -> [Athlete] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.allAthletes()
+        }
+#endif
         let profiles: [AthleteRecord] = try await client
             .from("athletes")
             .select()
@@ -118,7 +159,12 @@ final class AthleteService {
     }
 
     func currentUserID() async throws -> UUID {
-        try await client.auth.session.user.id
+#if DEBUG
+        if let developerStore {
+            return await developerStore.currentUserID()
+        }
+#endif
+        return try await client.auth.session.user.id
     }
 
     fileprivate static let dateFormatter: DateFormatter = {

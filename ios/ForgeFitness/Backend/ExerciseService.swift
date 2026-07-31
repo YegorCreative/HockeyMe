@@ -2,8 +2,11 @@ import Foundation
 import Supabase
 
 final class ExerciseService {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
     private let offlineStore: OfflineStore
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(
         client: SupabaseClient,
@@ -11,9 +14,25 @@ final class ExerciseService {
     ) {
         self.client = client
         self.offlineStore = offlineStore
+#if DEBUG
+        developerStore = nil
+#endif
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        offlineStore = .shared
+        self.developerStore = developerStore
+    }
+#endif
+
     func fetchExercises() async throws -> [Exercise] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.exerciseLibrary()
+        }
+#endif
         do {
             let records: [LiveExerciseRecord] = try await client
                 .from("exercises")

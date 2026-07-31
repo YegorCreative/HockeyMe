@@ -22,9 +22,13 @@ enum TestingRepositoryError: LocalizedError {
 }
 
 final class TestingRepository: @unchecked Sendable {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
     private let offlineStore: OfflineStore
     private let connectivityMonitor: ConnectivityMonitor
+    private let synchronizationGate = SynchronizationGate()
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(
         client: SupabaseClient,
@@ -34,12 +38,29 @@ final class TestingRepository: @unchecked Sendable {
         self.client = client
         self.offlineStore = offlineStore
         self.connectivityMonitor = connectivityMonitor
+#if DEBUG
+        developerStore = nil
+#endif
         connectivityMonitor.start { [weak self] in
             Task { try? await self?.synchronizePendingResults() }
         }
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        offlineStore = .shared
+        connectivityMonitor = ConnectivityMonitor()
+        self.developerStore = developerStore
+    }
+#endif
+
     func loadProtocols() async throws -> [TestingProtocol] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.testingProtocols()
+        }
+#endif
         let rows: [ProtocolRecord] = try await client
             .from("testing_protocols")
             .select(
@@ -57,6 +78,16 @@ final class TestingRepository: @unchecked Sendable {
         allowsAthleteEntry: Bool,
         metrics: [TestingMetric]
     ) async throws -> TestingProtocol {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.createTestingProtocol(
+                name: name,
+                description: description,
+                allowsAthleteEntry: allowsAthleteEntry,
+                metrics: metrics
+            )
+        }
+#endif
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !metrics.isEmpty else {
             throw TestingRepositoryError.invalidProtocol
@@ -86,6 +117,12 @@ final class TestingRepository: @unchecked Sendable {
     }
 
     func updateProtocol(_ value: TestingProtocol) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.updateTestingProtocol(value)
+            return
+        }
+#endif
         guard !value.name.trimmingCharacters(
             in: .whitespacesAndNewlines
         ).isEmpty, !value.metrics.isEmpty else {
@@ -108,6 +145,11 @@ final class TestingRepository: @unchecked Sendable {
     func duplicateProtocol(
         _ source: TestingProtocol
     ) async throws -> TestingProtocol {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.duplicateTestingProtocol(source)
+        }
+#endif
         let userID = try await client.auth.session.user.id
         let id = UUID()
         let copy = TestingProtocol(
@@ -157,6 +199,18 @@ final class TestingRepository: @unchecked Sendable {
         season: String,
         location: String
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.scheduleTesting(
+                protocolID: protocolID,
+                athleteIDs: athleteIDs,
+                date: date,
+                season: season,
+                location: location
+            )
+            return
+        }
+#endif
         let userID = try await client.auth.session.user.id
         let payloads = athleteIDs.map {
             SessionPayload(
@@ -179,6 +233,11 @@ final class TestingRepository: @unchecked Sendable {
     }
 
     func loadSessions() async throws -> [TestingSession] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.testingSessions()
+        }
+#endif
         let userID = try await client.auth.session.user.id
         do {
             try await synchronizePendingResults()
@@ -213,6 +272,17 @@ final class TestingRepository: @unchecked Sendable {
         notes: String,
         source: TestingResultSource
     ) async throws -> TestingResult {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.recordTestingResult(
+                session: session,
+                metric: metric,
+                value: value,
+                notes: notes,
+                source: source
+            )
+        }
+#endif
         guard value.isFinite else {
             throw TestingRepositoryError.invalidResult
         }
@@ -246,6 +316,12 @@ final class TestingRepository: @unchecked Sendable {
     }
 
     func complete(sessionID: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.completeTestingSession(id: sessionID)
+            return
+        }
+#endif
         try await client.from("testing_sessions")
             .update(
                 SessionCompletion(
@@ -258,6 +334,17 @@ final class TestingRepository: @unchecked Sendable {
     }
 
     func synchronizePendingResults() async throws {
+        try await synchronizationGate.run { [self] in
+            try await performPendingResultSynchronization()
+        }
+    }
+
+    private func performPendingResultSynchronization() async throws {
+#if DEBUG
+        if developerStore != nil {
+            return
+        }
+#endif
         let userID = try await client.auth.session.user.id
         var remaining: [PendingTestingResult] = []
         for pending in await offlineStore.pendingTestingResults(
@@ -277,6 +364,11 @@ final class TestingRepository: @unchecked Sendable {
     }
 
     func hasPendingResults() async -> Bool {
+#if DEBUG
+        if developerStore != nil {
+            return false
+        }
+#endif
         guard let userID = try? await client.auth.session.user.id else {
             return false
         }

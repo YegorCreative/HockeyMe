@@ -1,7 +1,7 @@
 import Foundation
 import Supabase
 
-enum AuthenticationServiceError: LocalizedError {
+enum AuthenticationServiceError: LocalizedError, Equatable {
     case invalidCredentials
     case emailAlreadyExists
     case emailConfirmationRequired

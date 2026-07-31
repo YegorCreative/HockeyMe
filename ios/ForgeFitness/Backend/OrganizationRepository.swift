@@ -19,8 +19,11 @@ enum OrganizationRepositoryError: LocalizedError {
 }
 
 final class OrganizationRepository {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
     private let offlineStore: OfflineStore
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(
         client: SupabaseClient,
@@ -28,9 +31,25 @@ final class OrganizationRepository {
     ) {
         self.client = client
         self.offlineStore = offlineStore
+#if DEBUG
+        developerStore = nil
+#endif
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        offlineStore = .shared
+        self.developerStore = developerStore
+    }
+#endif
+
     func loadContext() async throws -> OrganizationContext {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.organizationContext()
+        }
+#endif
         let userID = try await client.auth.session.user.id
         do {
             let memberRows: [MembershipRecord] = try await client
@@ -92,6 +111,11 @@ final class OrganizationRepository {
     }
 
     func createOrganization(name: String) async throws -> UUID {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.createOrganization(name: name)
+        }
+#endif
         let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let slug = normalized.lowercased()
             .replacingOccurrences(
@@ -118,6 +142,16 @@ final class OrganizationRepository {
         name: String,
         ageGroup: String
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.createTeam(
+                organizationID: organizationID,
+                name: name,
+                ageGroup: ageGroup
+            )
+            return
+        }
+#endif
         guard !name.trimmingCharacters(
             in: .whitespacesAndNewlines
         ).isEmpty else {
@@ -135,6 +169,12 @@ final class OrganizationRepository {
     }
 
     func archiveTeam(id: UUID, archived: Bool) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.archiveTeam(id: id, archived: archived)
+            return
+        }
+#endif
         try await client.from("teams")
             .update(
                 ArchiveUpdate(
@@ -151,6 +191,17 @@ final class OrganizationRepository {
         startsOn: Date,
         endsOn: Date
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.createSeason(
+                organizationID: organizationID,
+                name: name,
+                startsOn: startsOn,
+                endsOn: endsOn
+            )
+            return
+        }
+#endif
         guard !name.isEmpty, endsOn >= startsOn else {
             throw OrganizationRepositoryError.invalidName
         }
@@ -167,6 +218,12 @@ final class OrganizationRepository {
     }
 
     func archiveSeason(id: UUID, archived: Bool) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.archiveSeason(id: id, archived: archived)
+            return
+        }
+#endif
         try await client.from("seasons")
             .update(
                 ArchiveUpdate(
@@ -182,6 +239,16 @@ final class OrganizationRepository {
         targetSeasonID: UUID,
         name: String
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.cloneTeam(
+                sourceTeamID: sourceTeamID,
+                targetSeasonID: targetSeasonID,
+                name: name
+            )
+            return
+        }
+#endif
         try await client.rpc(
             "clone_team_to_season",
             params: CloneTeamParameters(
@@ -195,6 +262,13 @@ final class OrganizationRepository {
     func loadMembers(
         organizationID: UUID
     ) async throws -> [OrganizationMembership] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.organizationMembers(
+                organizationID: organizationID
+            )
+        }
+#endif
         let rows: [MembershipOnlyRecord] = try await client
             .from("organization_members")
             .select(
@@ -212,6 +286,15 @@ final class OrganizationRepository {
         membershipID: UUID,
         roles: [OrganizationRole]
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.updateMemberRoles(
+                membershipID: membershipID,
+                roles: roles
+            )
+            return
+        }
+#endif
         guard !roles.isEmpty else {
             throw OrganizationRepositoryError.invalidInvitation
         }
@@ -224,6 +307,13 @@ final class OrganizationRepository {
     func loadTeamMemberships(
         organizationID: UUID
     ) async throws -> [OrganizationTeamMembership] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.teamMemberships(
+                organizationID: organizationID
+            )
+        }
+#endif
         let rows: [TeamMembershipRecord] = try await client
             .from("team_members")
             .select(
@@ -243,6 +333,18 @@ final class OrganizationRepository {
         role: OrganizationRole,
         athleteID: UUID? = nil
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.assignMember(
+                organizationID: organizationID,
+                teamID: teamID,
+                membershipID: membershipID,
+                role: role,
+                athleteID: athleteID
+            )
+            return
+        }
+#endif
         try await client.from("team_members")
             .upsert(
                 TeamMemberInsert(
@@ -263,6 +365,18 @@ final class OrganizationRepository {
         fromTeamID: UUID?,
         toTeamID: UUID
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.moveAthlete(
+                athleteID: athleteID,
+                organizationID: organizationID,
+                seasonID: seasonID,
+                fromTeamID: fromTeamID,
+                toTeamID: toTeamID
+            )
+            return
+        }
+#endif
         guard let fromTeamID else {
             throw OrganizationRepositoryError.invalidInvitation
         }
@@ -285,6 +399,17 @@ final class OrganizationRepository {
         teamIDs: [UUID],
         expiresInHours: Int
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.createInvitation(
+                organizationID: organizationID,
+                email: email,
+                roles: roles,
+                expiresInHours: expiresInHours
+            )
+            return
+        }
+#endif
         guard email.contains("@"), !roles.isEmpty else {
             throw OrganizationRepositoryError.invalidInvitation
         }
@@ -305,6 +430,13 @@ final class OrganizationRepository {
     func loadInvitations(
         organizationID: UUID
     ) async throws -> [OrganizationInvitation] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.organizationInvitations(
+                organizationID: organizationID
+            )
+        }
+#endif
         let rows: [InvitationRecord] = try await client
             .from("invitations")
             .select(
@@ -319,6 +451,12 @@ final class OrganizationRepository {
     }
 
     func revokeInvitation(id: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.revokeInvitation(id: id)
+            return
+        }
+#endif
         try await client.rpc(
             "revoke_organization_invitation",
             params: ["check_invitation_id": id.uuidString]
@@ -329,6 +467,11 @@ final class OrganizationRepository {
         token: String,
         accept: Bool
     ) async throws {
+#if DEBUG
+        if developerStore != nil {
+            return
+        }
+#endif
         try await client.rpc(
             "respond_to_organization_invitation",
             params: InvitationResponseParameters(
@@ -352,6 +495,15 @@ final class OrganizationRepository {
         organizationID: UUID,
         newOwnerUserID: UUID
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.transferOwnership(
+                organizationID: organizationID,
+                newOwnerUserID: newOwnerUserID
+            )
+            return
+        }
+#endif
         try await client.rpc(
             "transfer_organization_ownership",
             params: [
@@ -365,6 +517,13 @@ final class OrganizationRepository {
         organizationID: UUID,
         context: OrganizationContext
     ) async throws -> OrganizationAnalytics {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.organizationAnalytics(
+                organizationID: organizationID
+            )
+        }
+#endif
         let members = try await loadMembers(organizationID: organizationID)
         let testing: [StatusRecord] = try await client
             .from("testing_sessions")
@@ -413,6 +572,11 @@ final class OrganizationRepository {
     }
 
     func loadParentActivity() async throws -> [ParentAthleteActivity] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.parentActivity()
+        }
+#endif
         let athletes: [ParentAthleteRecord] = try await client
             .from("athletes")
             .select("id,first_name,last_name")

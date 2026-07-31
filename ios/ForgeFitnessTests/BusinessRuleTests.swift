@@ -113,4 +113,112 @@ final class BusinessRuleTests: XCTestCase {
             TrainingRepositoryError.sessionUnavailable.errorDescription
         )
     }
+
+    func testErrorPresentationSeparatesRecoveryCategories() {
+        let offline = AppErrorPresentation.make(
+            for: URLError(.notConnectedToInternet)
+        )
+        XCTAssertEqual(offline.kind, .network)
+        XCTAssertTrue(offline.canRetry)
+        XCTAssertNotNil(offline.recoveryAction)
+
+        let permission = AppErrorPresentation.make(
+            for: AthleteServiceError.unauthorized
+        )
+        XCTAssertEqual(permission.kind, .permission)
+        XCTAssertFalse(permission.canRetry)
+
+        let cancellation = AppErrorPresentation.make(
+            for: CancellationError()
+        )
+        XCTAssertEqual(cancellation.kind, .cancellation)
+        XCTAssertFalse(cancellation.canRetry)
+    }
+
+    func testSynchronizationGateCoalescesConcurrentWork() async throws {
+        let gate = SynchronizationGate()
+        let counter = Phase10Counter()
+
+        async let first: Void = gate.run {
+            await counter.increment()
+            try await Task.sleep(for: .milliseconds(40))
+        }
+        async let second: Void = gate.run {
+            await counter.increment()
+            try await Task.sleep(for: .milliseconds(40))
+        }
+
+        _ = try await (first, second)
+        let count = await counter.value
+        XCTAssertEqual(count, 1)
+    }
+
+#if DEBUG
+    @MainActor
+    func testDeveloperRepositoriesUseProductionModelsInMemory() async throws {
+        let store = DeveloperModeStore()
+        let athleteService = AthleteService(developerStore: store)
+        let exerciseService = ExerciseService(developerStore: store)
+        let trainingRepository = TrainingRepository(developerStore: store)
+        let testingRepository = TestingRepository(developerStore: store)
+        let programRepository = ProgramRepository(developerStore: store)
+        let organizationRepository = OrganizationRepository(
+            developerStore: store
+        )
+
+        let hasProfile = try await athleteService.hasProfile()
+        let exercises = try await exerciseService.fetchExercises()
+        let plan = try await trainingRepository.loadActiveTrainingPlan()
+        let protocols = try await testingRepository.loadProtocols()
+        let programs = try await programRepository.loadPrograms()
+        let context = try await organizationRepository.loadContext()
+
+        XCTAssertTrue(hasProfile)
+        XCTAssertFalse(exercises.isEmpty)
+        XCTAssertFalse(plan.workouts.isEmpty)
+        XCTAssertFalse(protocols.isEmpty)
+        XCTAssertFalse(programs.isEmpty)
+        XCTAssertFalse(context.organizations.isEmpty)
+    }
+
+    @MainActor
+    func testDeveloperWorkoutSessionIsRestoredWithoutDuplicates() async throws {
+        let store = DeveloperModeStore()
+        let repository = TrainingRepository(developerStore: store)
+        let plan = try await repository.loadActiveTrainingPlan()
+        let workout = try XCTUnwrap(plan.workouts.first)
+
+        let first = try await repository.startSession(for: workout)
+        let second = try await repository.startSession(for: workout)
+        let restored = try await repository.restoreSession(for: workout)
+        let hasPendingLogs = await repository.hasPendingLogs()
+
+        XCTAssertEqual(first.id, second.id)
+        XCTAssertEqual(restored?.id, first.id)
+        XCTAssertFalse(hasPendingLogs)
+    }
+
+    @MainActor
+    func testDeveloperTestingHistoryDeduplicatesProtocolMetrics() async {
+        let store = DeveloperModeStore()
+        let viewModel = TestingDashboardViewModel(
+            role: .athlete,
+            repository: TestingRepository(developerStore: store),
+            athleteService: AthleteService(developerStore: store)
+        )
+
+        await viewModel.loadIfNeeded()
+
+        XCTAssertEqual(viewModel.sessions.count, 2)
+        XCTAssertEqual(Set(viewModel.analytics.map(\.metricID)).count, 2)
+    }
+#endif
+}
+
+private actor Phase10Counter {
+    private(set) var value = 0
+
+    func increment() {
+        value += 1
+    }
 }

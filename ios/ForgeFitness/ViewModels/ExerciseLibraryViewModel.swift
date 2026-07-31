@@ -11,7 +11,7 @@ final class ExerciseLibraryViewModel: ObservableObject {
     let categories = HockeyExerciseCategory.allCases
 
     private let service: ExerciseService
-    private var allExercises: [Exercise] = []
+    @Published private var allExercises: [Exercise] = []
     private var hasLoaded = false
 
     init(service: ExerciseService) {
@@ -39,17 +39,15 @@ final class ExerciseLibraryViewModel: ObservableObject {
     func refresh() async {
         guard !isLoading else { return }
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
         do {
             allExercises = try await service.fetchExercises()
             hasLoaded = true
-            objectWillChange.send()
         } catch {
-            errorMessage = (error as NSError).domain == NSURLErrorDomain
-                ? "You're offline. Check your connection and try again."
-                : error.localizedDescription
+            guard !(error is CancellationError) else { return }
+            errorMessage = AppErrorPresentation.make(for: error).combinedMessage
         }
-        isLoading = false
     }
 
     func select(_ category: HockeyExerciseCategory?) {

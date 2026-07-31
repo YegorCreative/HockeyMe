@@ -198,6 +198,14 @@ private struct AppRootView: View {
             }
         case .loading:
             LoadingView()
+        case let .routingError(message):
+            ForgeErrorState(
+                title: "Account Unavailable",
+                message: message,
+                retry: {
+                    Task { await router.retryRouting() }
+                }
+            )
         }
     }
 

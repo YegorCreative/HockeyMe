@@ -86,16 +86,16 @@ final class AthleteHomeViewModel: ObservableObject {
         }
 
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
 
         do {
             athlete = try await athleteService.loadCurrentProfile()
             hasLoaded = true
         } catch {
-            errorMessage = error.localizedDescription
+            guard !(error is CancellationError) else { return }
+            errorMessage = AppErrorPresentation.make(for: error).combinedMessage
         }
-
-        isLoading = false
     }
 
     private var dayPart: String {

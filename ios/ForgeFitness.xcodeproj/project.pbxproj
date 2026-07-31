@@ -8,6 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		200000000000000000000001 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 200000000000000000000002 /* Supabase */; };
+		500000000000000000000101 /* ForgeFitness/Models/TrainingProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000201 /* ForgeFitness/Models/TrainingProgram.swift */; };
+		500000000000000000000102 /* ForgeFitness/Models/PerformanceTesting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000202 /* ForgeFitness/Models/PerformanceTesting.swift */; };
+		500000000000000000000103 /* ForgeFitness/Models/Organization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000203 /* ForgeFitness/Models/Organization.swift */; };
+		500000000000000000000104 /* ForgeFitness/DesignSystem/Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000204 /* ForgeFitness/DesignSystem/Colors.swift */; };
+		500000000000000000000105 /* ForgeFitness/DesignSystem/Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000205 /* ForgeFitness/DesignSystem/Typography.swift */; };
+		500000000000000000000106 /* ForgeFitness/DesignSystem/Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000206 /* ForgeFitness/DesignSystem/Spacing.swift */; };
+		500000000000000000000107 /* ForgeFitness/DesignSystem/Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000207 /* ForgeFitness/DesignSystem/Radius.swift */; };
+		500000000000000000000108 /* ForgeFitness/DesignSystem/Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000208 /* ForgeFitness/DesignSystem/Motion.swift */; };
+		500000000000000000000109 /* ForgeFitness/DesignSystem/Elevation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500000000000000000000209 /* ForgeFitness/DesignSystem/Elevation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,12 +34,30 @@
 			remoteGlobalIDString = 100000000000000000000006;
 			remoteInfo = "Forge Fitness";
 		};
+		500000000000000000000012 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 10000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000006;
+			remoteInfo = "Forge Coach";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		100000000000000000000001 /* Forge Fitness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Forge Fitness.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		300000000000000000000001 /* ForgeFitnessTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForgeFitnessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		300000000000000000000002 /* ForgeFitnessUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForgeFitnessUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		500000000000000000000001 /* Forge Coach.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Forge Coach.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		500000000000000000000002 /* ForgeCoachTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ForgeCoachTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		500000000000000000000201 /* ForgeFitness/Models/TrainingProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/Models/TrainingProgram.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000202 /* ForgeFitness/Models/PerformanceTesting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/Models/PerformanceTesting.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000203 /* ForgeFitness/Models/Organization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/Models/Organization.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000204 /* ForgeFitness/DesignSystem/Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Colors.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000205 /* ForgeFitness/DesignSystem/Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Typography.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000206 /* ForgeFitness/DesignSystem/Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Spacing.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000207 /* ForgeFitness/DesignSystem/Radius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Radius.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000208 /* ForgeFitness/DesignSystem/Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Motion.swift; sourceTree = SOURCE_ROOT; };
+		500000000000000000000209 /* ForgeFitness/DesignSystem/Elevation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgeFitness/DesignSystem/Elevation.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,6 +74,16 @@
 		300000000000000000000004 /* ForgeFitnessUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ForgeFitnessUITests;
+			sourceTree = "<group>";
+		};
+		500000000000000000000003 /* macOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		500000000000000000000004 /* ForgeCoachTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ForgeCoachTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +111,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		500000000000000000000019 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		50000000000000000000001A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -83,6 +134,9 @@
 				100000000000000000000002 /* ForgeFitness */,
 				300000000000000000000003 /* ForgeFitnessTests */,
 				300000000000000000000004 /* ForgeFitnessUITests */,
+				500000000000000000000003 /* macOS */,
+				500000000000000000000004 /* ForgeCoachTests */,
+				500000000000000000000200 /* Shared */,
 				100000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,8 +147,26 @@
 				100000000000000000000001 /* Forge Fitness.app */,
 				300000000000000000000001 /* ForgeFitnessTests.xctest */,
 				300000000000000000000002 /* ForgeFitnessUITests.xctest */,
+				500000000000000000000001 /* Forge Coach.app */,
+				500000000000000000000002 /* ForgeCoachTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		500000000000000000000200 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				500000000000000000000201 /* ForgeFitness/Models/TrainingProgram.swift */,
+				500000000000000000000202 /* ForgeFitness/Models/PerformanceTesting.swift */,
+				500000000000000000000203 /* ForgeFitness/Models/Organization.swift */,
+				500000000000000000000204 /* ForgeFitness/DesignSystem/Colors.swift */,
+				500000000000000000000205 /* ForgeFitness/DesignSystem/Typography.swift */,
+				500000000000000000000206 /* ForgeFitness/DesignSystem/Spacing.swift */,
+				500000000000000000000207 /* ForgeFitness/DesignSystem/Radius.swift */,
+				500000000000000000000208 /* ForgeFitness/DesignSystem/Motion.swift */,
+				500000000000000000000209 /* ForgeFitness/DesignSystem/Elevation.swift */,
+			);
+			name = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -166,6 +238,47 @@
 			productReference = 300000000000000000000002 /* ForgeFitnessUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		500000000000000000000005 /* ForgeCoachTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 50000000000000000000000C /* Build configuration list for PBXNativeTarget "ForgeCoachTests" */;
+			buildPhases = (
+				50000000000000000000000D /* Sources */,
+				500000000000000000000019 /* Frameworks */,
+				50000000000000000000000F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				500000000000000000000010 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				500000000000000000000004 /* ForgeCoachTests */,
+			);
+			name = ForgeCoachTests;
+			productName = ForgeCoachTests;
+			productReference = 500000000000000000000002 /* ForgeCoachTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		500000000000000000000006 /* Forge Coach */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 500000000000000000000007 /* Build configuration list for PBXNativeTarget "Forge Coach" */;
+			buildPhases = (
+				500000000000000000000008 /* Sources */,
+				50000000000000000000001A /* Frameworks */,
+				500000000000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				500000000000000000000003 /* macOS */,
+			);
+			name = "Forge Coach";
+			productName = ForgeCoach;
+			productReference = 500000000000000000000001 /* Forge Coach.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -186,6 +299,13 @@
 					30000000000000000000000B = {
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 100000000000000000000006;
+					};
+					500000000000000000000005 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 500000000000000000000006;
+					};
+					500000000000000000000006 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -209,6 +329,8 @@
 				100000000000000000000006 /* Forge Fitness */,
 				300000000000000000000005 /* ForgeFitnessTests */,
 				30000000000000000000000B /* ForgeFitnessUITests */,
+				500000000000000000000006 /* Forge Coach */,
+				500000000000000000000005 /* ForgeCoachTests */,
 			);
 		};
 /* End PBXProject section */
@@ -235,6 +357,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		500000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		50000000000000000000000F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -247,6 +383,9 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(SRCROOT)/ForgeFitness/Backend/SupabaseConfig-Debug.plist",
+				"$(SRCROOT)/ForgeFitness/Backend/SupabaseConfig-Staging.plist",
+				"$(SRCROOT)/ForgeFitness/Backend/SupabaseConfig-Production.plist",
 			);
 			name = "Validate Environment";
 			outputFileListPaths = (
@@ -281,6 +420,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		500000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				500000000000000000000101 /* ForgeFitness/Models/TrainingProgram.swift in Sources */,
+				500000000000000000000102 /* ForgeFitness/Models/PerformanceTesting.swift in Sources */,
+				500000000000000000000103 /* ForgeFitness/Models/Organization.swift in Sources */,
+				500000000000000000000104 /* ForgeFitness/DesignSystem/Colors.swift in Sources */,
+				500000000000000000000105 /* ForgeFitness/DesignSystem/Typography.swift in Sources */,
+				500000000000000000000106 /* ForgeFitness/DesignSystem/Spacing.swift in Sources */,
+				500000000000000000000107 /* ForgeFitness/DesignSystem/Radius.swift in Sources */,
+				500000000000000000000108 /* ForgeFitness/DesignSystem/Motion.swift in Sources */,
+				500000000000000000000109 /* ForgeFitness/DesignSystem/Elevation.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		50000000000000000000000D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -293,6 +455,11 @@
 			isa = PBXTargetDependency;
 			target = 100000000000000000000006 /* Forge Fitness */;
 			targetProxy = 300000000000000000000012 /* PBXContainerItemProxy */;
+		};
+		500000000000000000000010 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000006 /* Forge Coach */;
+			targetProxy = 500000000000000000000012 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -623,6 +790,132 @@
 			};
 			name = Staging;
 		};
+		500000000000000000000013 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Forge Coach";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yegorhambaryan.forgefitness.coach;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		500000000000000000000014 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Forge Coach Staging";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.coach.staging;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "STAGING $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Staging;
+		};
+		500000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Forge Coach";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yegorhambaryan.forgefitness.coach;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		500000000000000000000016 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yegorhambaryan.forgefitness.coach.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Coach.app/Contents/MacOS/Forge Coach";
+			};
+			name = Debug;
+		};
+		500000000000000000000017 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.forgefitness.coach.staging.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Coach.app/Contents/MacOS/Forge Coach";
+			};
+			name = Staging;
+		};
+		500000000000000000000018 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yegorhambaryan.forgefitness.coach.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Forge Coach.app/Contents/MacOS/Forge Coach";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -662,6 +955,26 @@
 				300000000000000000000015 /* Debug */,
 				400000000000000000000004 /* Staging */,
 				300000000000000000000016 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		500000000000000000000007 /* Build configuration list for PBXNativeTarget "Forge Coach" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				500000000000000000000013 /* Debug */,
+				500000000000000000000014 /* Staging */,
+				500000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		50000000000000000000000C /* Build configuration list for PBXNativeTarget "ForgeCoachTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				500000000000000000000016 /* Debug */,
+				500000000000000000000017 /* Staging */,
+				500000000000000000000018 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

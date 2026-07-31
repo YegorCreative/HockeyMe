@@ -10,6 +10,7 @@ enum AppRoute: Equatable {
     case coachHome
     case parentHome
     case loading
+    case routingError(String)
 }
 
 @MainActor
@@ -118,6 +119,10 @@ final class AppRouter: ObservableObject {
         route = .athleteHome
     }
 
+    func retryRouting() async {
+        await routeAuthenticatedUser()
+    }
+
     private func routeAuthenticatedUser() async {
         if let context = try? await organizationRepository?.loadContext() {
             if context.roles.contains(where: \.isStaff) {
@@ -148,7 +153,11 @@ final class AppRouter: ObservableObject {
                 ? .athleteHome
                 : .athleteOnboarding
         } catch {
-            route = .athleteOnboarding
+            guard !(error is CancellationError) else {
+                return
+            }
+            let presentation = AppErrorPresentation.make(for: error)
+            route = .routingError(presentation.combinedMessage)
         }
     }
 

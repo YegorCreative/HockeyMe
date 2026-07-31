@@ -43,6 +43,7 @@ final class CoachHomeViewModel: ObservableObject {
         }
 
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
 
         do {
@@ -50,10 +51,9 @@ final class CoachHomeViewModel: ObservableObject {
             athletes = profiles.map(Self.makeCoachAthlete)
             hasLoaded = true
         } catch {
+            guard !(error is CancellationError) else { return }
             errorMessage = Self.message(for: error)
         }
-
-        isLoading = false
     }
 
     private static func makeCoachAthlete(
@@ -87,11 +87,7 @@ final class CoachHomeViewModel: ObservableObject {
     }
 
     private static func message(for error: Error) -> String {
-        if (error as NSError).domain == NSURLErrorDomain {
-            return "A network connection isn't available. Pull to refresh and try again."
-        }
-
-        return error.localizedDescription
+        AppErrorPresentation.make(for: error).combinedMessage
     }
 }
 

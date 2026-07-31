@@ -41,3 +41,6 @@ backend/supabase/.env.*
 .idea/
 .vscode/
 *.swp
+# Forge Coach environment configuration (examples may be committed)
+ios/macOS/Configuration/SupabaseConfig-Mac-*.plist
+!ios/macOS/Configuration/*.example.plist

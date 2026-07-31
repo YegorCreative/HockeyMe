@@ -32,9 +32,13 @@ enum TrainingRepositoryError: LocalizedError {
 }
 
 final class TrainingRepository: @unchecked Sendable {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
     private let offlineStore: OfflineStore
     private let connectivityMonitor: ConnectivityMonitor
+    private let synchronizationGate = SynchronizationGate()
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(
         client: SupabaseClient,
@@ -44,6 +48,9 @@ final class TrainingRepository: @unchecked Sendable {
         self.client = client
         self.offlineStore = offlineStore
         self.connectivityMonitor = connectivityMonitor
+#if DEBUG
+        developerStore = nil
+#endif
         connectivityMonitor.start { [weak self] in
             Task {
                 try? await self?.synchronizePendingLogs()
@@ -51,7 +58,21 @@ final class TrainingRepository: @unchecked Sendable {
         }
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        offlineStore = .shared
+        connectivityMonitor = ConnectivityMonitor()
+        self.developerStore = developerStore
+    }
+#endif
+
     func loadActiveTrainingPlan() async throws -> TrainingPlan {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.trainingPlan()
+        }
+#endif
         let userID = try await client.auth.session.user.id
         do {
             try await synchronizePendingLogs()
@@ -79,6 +100,13 @@ final class TrainingRepository: @unchecked Sendable {
     func restoreSession(
         for workout: Workout
     ) async throws -> RestoredWorkoutSession? {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.restoreWorkoutSession(
+                workoutID: workout.id
+            )
+        }
+#endif
         let athleteID = try await currentAthleteID()
         let sessions: [SessionRecord] = try await client
             .from("workout_sessions")
@@ -105,6 +133,13 @@ final class TrainingRepository: @unchecked Sendable {
     }
 
     func startSession(for workout: Workout) async throws -> RestoredWorkoutSession {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.startWorkoutSession(
+                workoutID: workout.id
+            )
+        }
+#endif
         if let existing = try await restoreSession(for: workout) {
             return existing
         }
@@ -147,6 +182,15 @@ final class TrainingRepository: @unchecked Sendable {
         sessionID: UUID,
         prescription: WorkoutExercise
     ) async throws -> WorkoutSetLog {
+#if DEBUG
+        if let developerStore {
+            await developerStore.saveWorkoutSet(
+                set,
+                sessionID: sessionID
+            )
+            return set
+        }
+#endif
         let insert = SetInsert(
             id: set.id,
             sessionID: sessionID,
@@ -188,6 +232,15 @@ final class TrainingRepository: @unchecked Sendable {
         startedAt: Date,
         sets: [WorkoutSetLog]
     ) async throws -> WorkoutSessionSummary {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.finishWorkoutSession(
+                id: id,
+                startedAt: startedAt,
+                sets: sets
+            )
+        }
+#endif
         let completedAt = Date()
         let totalReps = sets.reduce(0) { $0 + $1.reps }
         let totalVolume = sets.reduce(0) {
@@ -236,6 +289,13 @@ final class TrainingRepository: @unchecked Sendable {
     func loadPreviousValue(
         exerciseID: UUID
     ) async throws -> PreviousWorkoutValue? {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.previousWorkoutValue(
+                exerciseID: exerciseID
+            )
+        }
+#endif
         let athleteID = try await currentAthleteID()
         let records: [PreviousSetRecord] = try await client
             .from("workout_sets")
@@ -339,6 +399,17 @@ final class TrainingRepository: @unchecked Sendable {
     }
 
     func synchronizePendingLogs() async throws {
+        try await synchronizationGate.run { [self] in
+            try await performPendingLogSynchronization()
+        }
+    }
+
+    private func performPendingLogSynchronization() async throws {
+#if DEBUG
+        if developerStore != nil {
+            return
+        }
+#endif
         await AnalyticsService.shared.track(.offlineSyncStarted)
         let userID = try await client.auth.session.user.id
         var remainingSets: [PendingWorkoutSet] = []
@@ -397,6 +468,11 @@ final class TrainingRepository: @unchecked Sendable {
     }
 
     func hasPendingLogs() async -> Bool {
+#if DEBUG
+        if developerStore != nil {
+            return false
+        }
+#endif
         guard let userID = try? await client.auth.session.user.id else {
             return false
         }

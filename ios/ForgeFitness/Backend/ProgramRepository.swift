@@ -22,13 +22,31 @@ enum ProgramRepositoryError: LocalizedError {
 }
 
 final class ProgramRepository {
-    private let client: SupabaseClient
+    private let client: SupabaseClient!
+#if DEBUG
+    private let developerStore: DeveloperModeStore?
+#endif
 
     init(client: SupabaseClient) {
         self.client = client
+#if DEBUG
+        developerStore = nil
+#endif
     }
 
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        client = nil
+        self.developerStore = developerStore
+    }
+#endif
+
     func isCurrentUserCoach() async -> Bool {
+#if DEBUG
+        if developerStore != nil {
+            return true
+        }
+#endif
         do {
             let userID = try await client.auth.session.user.id
             let records: [CoachReference] = try await client
@@ -45,6 +63,11 @@ final class ProgramRepository {
     }
 
     func loadPrograms() async throws -> [TrainingProgram] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.programs()
+        }
+#endif
         let coachID = try await client.auth.session.user.id
         let records: [ProgramRecord] = try await client
             .from("workout_programs")
@@ -57,6 +80,11 @@ final class ProgramRepository {
     }
 
     func loadProgram(id: UUID) async throws -> TrainingProgram {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.program(id: id)
+        }
+#endif
         let records: [ProgramRecord] = try await client
             .from("workout_programs")
             .select()
@@ -91,6 +119,11 @@ final class ProgramRepository {
     }
 
     func createProgram() async throws -> TrainingProgram {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.createProgram()
+        }
+#endif
         let insert = ProgramInsert(
             coachUserID: try await client.auth.session.user.id,
             name: "Untitled Program",
@@ -109,6 +142,12 @@ final class ProgramRepository {
     }
 
     func updateProgram(_ program: TrainingProgram) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateProgram(program)
+            return
+        }
+#endif
         try await client
             .from("workout_programs")
             .update(
@@ -126,6 +165,15 @@ final class ProgramRepository {
         _ status: TrainingProgramStatus,
         for program: TrainingProgram
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.setProgramStatus(
+                status,
+                program: program
+            )
+            return
+        }
+#endif
         if status == .published, !isPublishable(program) {
             throw ProgramRepositoryError.emptyProgram
         }
@@ -137,6 +185,12 @@ final class ProgramRepository {
     }
 
     func deleteProgram(_ program: TrainingProgram) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.deleteProgram(id: program.id)
+            return
+        }
+#endif
         if program.status == .published,
            try await hasActiveAssignments(programID: program.id) {
             throw ProgramRepositoryError.protectedProgram
@@ -149,6 +203,11 @@ final class ProgramRepository {
     }
 
     func duplicateProgram(_ source: TrainingProgram) async throws -> UUID {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.duplicateProgram(source)
+        }
+#endif
         let fullSource = try await loadProgram(id: source.id)
         var duplicate = try await createProgram()
         duplicate.name = "\(fullSource.name) Copy"
@@ -193,6 +252,15 @@ final class ProgramRepository {
         number: Int,
         name: String? = nil
     ) async throws -> TrainingProgramWeek {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.addProgramWeek(
+                programID: programID,
+                number: number,
+                name: name
+            )
+        }
+#endif
         let record: ProgramWeekRecord = try await client
             .from("workout_program_weeks")
             .insert(
@@ -217,6 +285,12 @@ final class ProgramRepository {
     }
 
     func updateWeek(_ week: TrainingProgramWeek) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateProgramWeek(week)
+            return
+        }
+#endif
         try await client
             .from("workout_program_weeks")
             .update(
@@ -231,6 +305,12 @@ final class ProgramRepository {
     }
 
     func reorderWeeks(_ weeks: [TrainingProgramWeek]) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.reorderProgramWeeks(weeks)
+            return
+        }
+#endif
         for (index, week) in weeks.enumerated() {
             try await client
                 .from("workout_program_weeks")
@@ -248,6 +328,12 @@ final class ProgramRepository {
     }
 
     func deleteWeek(id: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.deleteProgramWeek(id: id)
+            return
+        }
+#endif
         try await client
             .from("workout_program_weeks")
             .delete()
@@ -261,6 +347,16 @@ final class ProgramRepository {
         sortOrder: Int,
         name: String = "Untitled Workout"
     ) async throws -> ProgramWorkout {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.addProgramWorkout(
+                weekID: weekID,
+                dayNumber: dayNumber,
+                sortOrder: sortOrder,
+                name: name
+            )
+        }
+#endif
         let record: ProgramWorkoutRecord = try await client
             .from("workouts")
             .insert(
@@ -281,6 +377,12 @@ final class ProgramRepository {
     }
 
     func updateWorkout(_ workout: ProgramWorkout) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateProgramWorkout(workout)
+            return
+        }
+#endif
         try await client
             .from("workouts")
             .update(
@@ -298,6 +400,12 @@ final class ProgramRepository {
     }
 
     func reorderWorkouts(_ workouts: [ProgramWorkout]) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.reorderProgramWorkouts(workouts)
+            return
+        }
+#endif
         for (index, workout) in workouts.enumerated() {
             try await client
                 .from("workouts")
@@ -315,6 +423,12 @@ final class ProgramRepository {
     }
 
     func deleteWorkout(id: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.deleteProgramWorkout(id: id)
+            return
+        }
+#endif
         try await client
             .from("workouts")
             .delete()
@@ -323,6 +437,11 @@ final class ProgramRepository {
     }
 
     func loadExerciseChoices() async throws -> [ProgramExerciseChoice] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.programExerciseChoices()
+        }
+#endif
         let records: [ExerciseChoiceRecord] = try await client
             .from("exercises")
             .select("id,name,category,difficulty")
@@ -339,6 +458,16 @@ final class ProgramRepository {
         order: Int,
         values: ProgramExercise? = nil
     ) async throws -> ProgramExercise {
+#if DEBUG
+        if let developerStore {
+            return try await developerStore.addProgramExercise(
+                workoutID: workoutID,
+                exerciseID: exerciseID,
+                order: order,
+                values: values
+            )
+        }
+#endif
         let insert = PrescriptionInsert(
             workoutID: workoutID,
             exerciseID: exerciseID,
@@ -364,6 +493,12 @@ final class ProgramRepository {
     }
 
     func updateExercise(_ exercise: ProgramExercise) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.updateProgramExercise(exercise)
+            return
+        }
+#endif
         try await client
             .from("workout_exercises")
             .update(
@@ -383,6 +518,12 @@ final class ProgramRepository {
     }
 
     func reorderExercises(_ exercises: [ProgramExercise]) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.reorderProgramExercises(exercises)
+            return
+        }
+#endif
         for (index, exercise) in exercises.enumerated() {
             try await client
                 .from("workout_exercises")
@@ -400,6 +541,12 @@ final class ProgramRepository {
     }
 
     func deleteExercise(id: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.deleteProgramExercise(id: id)
+            return
+        }
+#endif
         try await client
             .from("workout_exercises")
             .delete()
@@ -410,6 +557,13 @@ final class ProgramRepository {
     func loadAssignableAthletes(
         programID: UUID
     ) async throws -> [ProgramAthlete] {
+#if DEBUG
+        if let developerStore {
+            return await developerStore.assignableAthletes(
+                programID: programID
+            )
+        }
+#endif
         let athleteRecords: [AssignableAthleteRecord] = try await client
             .rpc("get_assignable_athletes")
             .execute()
@@ -434,6 +588,15 @@ final class ProgramRepository {
         athleteID: UUID,
         to program: TrainingProgram
     ) async throws {
+#if DEBUG
+        if let developerStore {
+            try await developerStore.assignAthlete(
+                athleteID: athleteID,
+                program: program
+            )
+            return
+        }
+#endif
         guard program.status == .published else {
             throw ProgramRepositoryError.unpublishedProgram
         }
@@ -460,6 +623,12 @@ final class ProgramRepository {
     }
 
     func removeAssignment(id: UUID) async throws {
+#if DEBUG
+        if let developerStore {
+            await developerStore.removeAssignment(id: id)
+            return
+        }
+#endif
         try await client
             .from("athlete_program_assignments")
             .update(AssignmentStatusUpdate(status: "cancelled"))

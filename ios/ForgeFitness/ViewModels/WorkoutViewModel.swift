@@ -48,6 +48,7 @@ final class WorkoutViewModel: ObservableObject {
     private func load() async {
         guard !isLoading else { return }
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
 
         do {
@@ -59,17 +60,12 @@ final class WorkoutViewModel: ObservableObject {
             workouts = []
             hasLoaded = true
         } catch {
+            guard !(error is CancellationError) else { return }
             errorMessage = Self.friendlyMessage(for: error)
         }
-
-        isLoading = false
     }
 
     private static func friendlyMessage(for error: Error) -> String {
-        let nsError = error as NSError
-        if nsError.domain == NSURLErrorDomain {
-            return "You're offline. Check your connection and try again."
-        }
-        return error.localizedDescription
+        AppErrorPresentation.make(for: error).combinedMessage
     }
 }
