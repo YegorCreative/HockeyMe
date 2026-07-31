@@ -87,69 +87,6 @@ struct ForgeFitnessApp: App {
 
     var body: some Scene {
         WindowGroup {
-<<<<<<< HEAD
-            Group {
-                switch router.route {
-                case .authentication:
-                    AuthenticationView(
-                        authService: router.authService,
-                        initialErrorMessage: router.startupErrorMessage
-                    )
-                case .athleteOnboarding:
-                    if let athleteService = router.athleteService {
-                        AthleteOnboardingView(
-                            athleteService: athleteService,
-                            onCompletion: {
-                                router.completeAthleteOnboarding()
-                            }
-                        )
-                    } else {
-                        AuthenticationView(
-                            authService: nil,
-                            initialErrorMessage: router.startupErrorMessage
-                        )
-                    }
-                case .athleteHome:
-                    if let athleteService = router.athleteService,
-                       let trainingRepository = router.trainingRepository {
-                        AthleteHomeView(
-                            athleteService: athleteService,
-                            trainingRepository: trainingRepository,
-                            exerciseService: router.exerciseService,
-                            testingRepository: router.testingRepository,
-                            organizationRepository:
-                                router.organizationRepository
-                        )
-                    }
-                case .coachHome:
-                    if let athleteService = router.athleteService,
-                       let programRepository = router.programRepository {
-                        CoachHomeView(
-                            athleteService: athleteService,
-                            programRepository: programRepository,
-                            testingRepository: router.testingRepository,
-                            organizationRepository:
-                                router.organizationRepository
-                        )
-                    }
-                case .parentHome:
-                    if let organizationRepository =
-                        router.organizationRepository,
-                       let athleteService = router.athleteService {
-                        ParentHomeView(
-                            organizationRepository: organizationRepository,
-                            testingRepository: router.testingRepository,
-                            athleteService: athleteService
-                        )
-                    }
-                case .loading:
-                    LoadingView()
-                }
-            }
-            .task {
-                await router.start()
-            }
-=======
             AppRootView(router: router)
         }
     }
@@ -208,7 +145,8 @@ private struct AppRootView: View {
                     athleteService: athleteService,
                     trainingRepository: trainingRepository,
                     exerciseService: router.exerciseService,
-                    testingRepository: router.testingRepository
+                    testingRepository: router.testingRepository,
+                    organizationRepository: router.organizationRepository
                 )
             }
         case .coachHome:
@@ -217,7 +155,17 @@ private struct AppRootView: View {
                 CoachHomeView(
                     athleteService: athleteService,
                     programRepository: programRepository,
-                    testingRepository: router.testingRepository
+                    testingRepository: router.testingRepository,
+                    organizationRepository: router.organizationRepository
+                )
+            }
+        case .parentHome:
+            if let organizationRepository = router.organizationRepository,
+               let athleteService = router.athleteService {
+                ParentHomeView(
+                    organizationRepository: organizationRepository,
+                    testingRepository: router.testingRepository,
+                    athleteService: athleteService
                 )
             }
         case .loading:
@@ -238,7 +186,6 @@ private struct AppRootView: View {
 
         withAnimation(.easeInOut(duration: 0.28)) {
             isShowingSplash = false
->>>>>>> d27d11ed7ec2f4be25867335d37f08470ccc506c
         }
     }
 }
