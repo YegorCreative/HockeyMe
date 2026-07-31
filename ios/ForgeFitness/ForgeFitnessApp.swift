@@ -68,6 +68,28 @@ struct ForgeFitnessApp: App {
                     organizationRepository: organizationRepository
                 )
             )
+        } catch SupabaseConfigurationError.fileNotFound {
+            SupabaseDebugLogger.logConfigurationError(
+                SupabaseConfigurationError.fileNotFound
+            )
+#if DEBUG
+            _router = StateObject(
+                wrappedValue: AppRouter(
+                    developerStore: DeveloperModeStore()
+                )
+            )
+#else
+            _router = StateObject(
+                wrappedValue: AppRouter(
+                    authService: nil,
+                    athleteService: nil,
+                    trainingRepository: nil,
+                    programRepository: nil,
+                    exerciseService: nil,
+                    startupErrorMessage: "Forge Fitness has an invalid Supabase configuration. Please contact support."
+                )
+            )
+#endif
         } catch {
             SupabaseDebugLogger.logConfigurationError(error)
             _router = StateObject(
@@ -119,6 +141,12 @@ private struct AppRootView: View {
     @ViewBuilder
     private var routedContent: some View {
         switch router.route {
+#if DEBUG
+        case .developerMode:
+            if let developerStore = router.developerStore {
+                DeveloperModeView(store: developerStore)
+            }
+#endif
         case .authentication:
             AuthenticationView(
                 authService: router.authService,
@@ -184,7 +212,7 @@ private struct AppRootView: View {
             return
         }
 
-        withAnimation(.easeInOut(duration: 0.28)) {
+        withAnimation(AppMotion.standardAnimation) {
             isShowingSplash = false
         }
     }

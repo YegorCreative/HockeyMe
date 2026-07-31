@@ -1,6 +1,9 @@
 import Combine
 
 enum AppRoute: Equatable {
+#if DEBUG
+    case developerMode
+#endif
     case authentication
     case athleteOnboarding
     case athleteHome
@@ -21,6 +24,9 @@ final class AppRouter: ObservableObject {
     let testingRepository: TestingRepository?
     let organizationRepository: OrganizationRepository?
     let startupErrorMessage: String?
+#if DEBUG
+    let developerStore: DeveloperModeStore?
+#endif
 
     private var isStarted = false
     private var authenticationTask: Task<Void, Never>?
@@ -43,7 +49,24 @@ final class AppRouter: ObservableObject {
         self.testingRepository = testingRepository
         self.organizationRepository = organizationRepository
         self.startupErrorMessage = startupErrorMessage
+#if DEBUG
+        developerStore = nil
+#endif
     }
+
+#if DEBUG
+    init(developerStore: DeveloperModeStore) {
+        authService = nil
+        athleteService = nil
+        trainingRepository = nil
+        programRepository = nil
+        exerciseService = nil
+        testingRepository = nil
+        organizationRepository = nil
+        startupErrorMessage = nil
+        self.developerStore = developerStore
+    }
+#endif
 
     func start() async {
         guard !isStarted else {
@@ -51,6 +74,13 @@ final class AppRouter: ObservableObject {
         }
 
         isStarted = true
+
+#if DEBUG
+        if developerStore != nil {
+            route = .developerMode
+            return
+        }
+#endif
 
         guard let authService else {
             route = .authentication

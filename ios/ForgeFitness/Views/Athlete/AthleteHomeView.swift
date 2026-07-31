@@ -184,7 +184,7 @@ struct AthleteHomeView: View {
 
     private var metricCards: some View {
         HStack(spacing: AppSpacing.md) {
-            DashboardCard {
+            ForgeCard {
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
                     Label("Recovery", systemImage: "heart.fill")
                         .foregroundStyle(AppColors.success)
@@ -202,7 +202,7 @@ struct AthleteHomeView: View {
                 "Recovery score: \(viewModel.recoveryScore) out of 100"
             )
 
-            DashboardCard {
+            ForgeCard {
                 VStack(alignment: .leading, spacing: AppSpacing.sm) {
                     Label("Streak", systemImage: "flame.fill")
                         .foregroundStyle(AppColors.warning)
@@ -225,9 +225,9 @@ struct AthleteHomeView: View {
 
     private var quickStats: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            sectionTitle("Quick Stats")
+            SectionHeader(title: "Quick Stats")
 
-            DashboardCard {
+            ForgeCard {
                 HStack(spacing: AppSpacing.sm) {
                     ForEach(viewModel.quickStats) { stat in
                         VStack(spacing: AppSpacing.sm) {
@@ -253,9 +253,9 @@ struct AthleteHomeView: View {
 
     private var recentActivity: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            sectionTitle("Recent Activity")
+            SectionHeader(title: "Recent Activity")
 
-            DashboardCard {
+            ForgeCard {
                 VStack(spacing: 0) {
                     ForEach(
                         Array(viewModel.recentActivities.enumerated()),
@@ -278,9 +278,9 @@ struct AthleteHomeView: View {
 
     private var upcomingTesting: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
-            sectionTitle("Upcoming Testing")
+            SectionHeader(title: "Upcoming Testing")
 
-            DashboardCard {
+            ForgeCard {
                 VStack(spacing: 0) {
                     ForEach(
                         Array(viewModel.upcomingTests.enumerated()),
@@ -299,13 +299,6 @@ struct AthleteHomeView: View {
                 }
             }
         }
-    }
-
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(AppTypography.headline)
-            .foregroundStyle(AppColors.textPrimary)
-            .accessibilityAddTraits(.isHeader)
     }
 
     private func activityRow(_ activity: ActivitySummary) -> some View {
@@ -350,20 +343,6 @@ struct AthleteHomeView: View {
         }
         .padding(.vertical, AppSpacing.sm)
         .accessibilityElement(children: .combine)
-    }
-}
-
-private struct DashboardCard<Content: View>: View {
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        content
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(AppSpacing.md)
-            .background(AppColors.surface)
-            .clipShape(
-                RoundedRectangle(cornerRadius: AppRadius.medium)
-            )
     }
 }
 

@@ -78,10 +78,7 @@ struct WorkoutDetailView: View {
                 }
                 .accessibilityElement(children: .combine)
 
-                Text("Exercises")
-                    .font(AppTypography.headline)
-                    .foregroundStyle(AppColors.textPrimary)
-                    .accessibilityAddTraits(.isHeader)
+                SectionHeader(title: "Exercises")
 
                 if viewModel.workout.exercises.isEmpty {
                     Text("No exercises have been added to this workout.")
@@ -127,19 +124,16 @@ struct WorkoutDetailView: View {
                     }
                 }
 
-                Button("Start Workout") {
+                PrimaryButton(
+                    title: "Start Workout",
+                    systemImage: "play.fill",
+                    isLoading: viewModel.isSaving,
+                    isDisabled: viewModel.workout.exercises.isEmpty
+                ) {
                     Task {
                         await viewModel.startWorkout()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(AppColors.primary)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
-                .disabled(
-                    viewModel.isSaving
-                        || viewModel.workout.exercises.isEmpty
-                )
                 .accessibilityHint(
                     "Begins the exercise-by-exercise workout session"
                 )

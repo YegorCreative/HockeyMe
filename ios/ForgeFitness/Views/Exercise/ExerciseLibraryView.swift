@@ -15,10 +15,9 @@ struct ExerciseLibraryView: View {
                 performanceHeader
                 categoryFilters
 
-                Text("\(viewModel.exercises.count) Exercises")
-                    .font(AppTypography.headline)
-                    .foregroundStyle(AppColors.textPrimary)
-                    .accessibilityAddTraits(.isHeader)
+                SectionHeader(
+                    title: "\(viewModel.exercises.count) Exercises"
+                )
 
                 if viewModel.exercises.isEmpty {
                     emptyState
@@ -144,23 +143,11 @@ struct ExerciseLibraryView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: AppSpacing.md) {
-            Image(systemName: "magnifyingglass")
-                .font(AppTypography.largeTitle)
-                .foregroundStyle(AppColors.textSecondary)
-                .accessibilityHidden(true)
-
-            Text("No exercises found")
-                .font(AppTypography.headline)
-
-            Text("Try another movement, muscle, or performance category.")
-                .font(AppTypography.body)
-                .foregroundStyle(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AppSpacing.xl)
-        .accessibilityElement(children: .combine)
+        ForgeEmptyState(
+            title: "No exercises found",
+            message: "Try another movement, muscle, or performance category.",
+            systemImage: "magnifyingglass"
+        )
     }
 }
 

@@ -33,19 +33,19 @@ struct WorkoutSummaryView: View {
                     ],
                     spacing: AppSpacing.md
                 ) {
-                    summaryMetric(
+                    MetricCard(
                         title: "Total Volume",
                         value: "\(summary.totalVolume.formatted(.number.precision(.fractionLength(0)))) lb"
                     )
-                    summaryMetric(
+                    MetricCard(
                         title: "Total Sets",
                         value: String(summary.totalSets)
                     )
-                    summaryMetric(
+                    MetricCard(
                         title: "Total Reps",
                         value: String(summary.totalReps)
                     )
-                    summaryMetric(
+                    MetricCard(
                         title: "Duration",
                         value: formattedDuration
                     )
@@ -76,13 +76,9 @@ struct WorkoutSummaryView: View {
                     RoundedRectangle(cornerRadius: AppRadius.medium)
                 )
 
-                Button("Done") {
+                PrimaryButton(title: "Done") {
                     onDone()
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(AppColors.primary)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
                 .accessibilityHint("Returns to the workouts list")
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -94,25 +90,5 @@ struct WorkoutSummaryView: View {
         let minutes = summary.durationSeconds / 60
         let seconds = summary.durationSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)
-    }
-
-    private func summaryMetric(
-        title: String,
-        value: String
-    ) -> some View {
-        VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            Text(title)
-                .font(AppTypography.caption)
-                .foregroundStyle(AppColors.textSecondary)
-
-            Text(value)
-                .font(AppTypography.headline)
-                .foregroundStyle(AppColors.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.md)
-        .background(AppColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
-        .accessibilityElement(children: .combine)
     }
 }
